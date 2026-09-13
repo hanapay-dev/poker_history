@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ハンド履歴 - Poker Action Logger</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>Poker Hand History</h1>
+    <div class="header-controls">
+      <a href="index.html" class="btn-link">← メイン画面へ</a>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <div class="history-controls">
+      <button onclick="filterHistory('all')" id="filterAll" class="btn-filter active">すべて</button>
+      <button onclick="filterHistory('fav')" id="filterFav" class="btn-filter">★ お気に入りのみ</button>
+      <button onclick="clearAllHistory()" class="btn-clear-all">全削除(※★除く)</button>
+    </div>
+
+    <div id="historyList" class="history-list">
+      <!-- JavaScriptで動的に生成されます -->
+    </div>
+  </main>
+
+  <script src="history.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poker Action Logger</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ヘッダー（常に最前面に表示されクリック可能） -->
+  <header class="app-header">
+    <h1>Poker Action Logger</h1>
+    <div class="header-controls">
+      <a href="history.html" class="btn-link">履歴一覧</a>
+      <button onclick="undo()" id="undoBtn" disabled>Undo (1手戻す)</button>
+      <button onclick="resetHand()" class="btn-reset">新ハンド開始</button>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="main-container">
+
+    <!-- 状況表示エリア -->
+    <section class="status-panel">
+      <div class="status-item">
+        <span class="label">Street</span>
+        <span id="streetDisplay" class="value highlight">PREFLOP</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Pot</span>
+        <span id="potDisplay" class="value">1.5 BB</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Board</span>
+        <span id="boardCardsDisplay" class="value cards-text">なし</span>
+      </div>
+      <div class="status-item">
+        <span class="label">Turn</span>
+        <span id="currentTurnDisplay" class="value turn-text">--</span>
+      </div>
+    </section>
+
+    <!-- テーブル・プレイヤー状態表示 -->
+    <section class="table-section">
+      <div id="tableSeats" class="seats-grid">
+        <!-- JSで動的に表示 -->
+      </div>
+    </section>
+
+    <!-- アクションボタンエリア -->
+    <section class="action-section">
+      <div class="primary-actions">
+        <button onclick="handleAction('FOLD', 0)" class="btn-action btn-fold">FOLD</button>
+        <button onclick="handleCheckCall()" id="checkCallBtn" class="btn-action btn-call">CHECK</button>
+        <button onclick="openCustomBetModal()" id="raiseBtn" class="btn-action btn-raise">RAISE (手入力)</button>
+      </div>
+
+      <!-- プリセット・サイジングボタン -->
+      <div class="sizing-presets">
+        <button onclick="handleSizingAction(2.2)" class="btn-sizing">2.2x</button>
+        <button onclick="handleSizingAction(2.5)" class="btn-sizing">2.5x</button>
+        <button onclick="handleSizingAction(3.0)" class="btn-sizing">3.0x</button>
+        <button onclick="handleSizingAction(3.5)" class="btn-sizing">3.5x</button>
+      </div>
+    </section>
+
+    <!-- アクションログ表示エリア -->
+    <section class="log-section">
+      <h3>Hand Log</h3>
+      <div id="logArea" class="log-box"></div>
+    </section>
+
+  </main>
+
+  <!-- 初期設定モーダル -->
+  <div id="setupModal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>新規ハンド設定</h2>
+
+      <div class="form-group">
+        <label>人数（2〜9名）:</label>
+        <select id="tableSizeSelect" onchange="updatePositions()">
+          <option value="6" selected>6人打ち (6-max)</option>
+          <option value="2">2人打ち (HU)</option>
+          <option value="3">3人打ち</option>
+          <option value="4">4人打ち</option>
+          <option value="5">5人打ち</option>
+          <option value="7">7人打ち</option>
+          <option value="8">8人打ち</option>
+          <option value="9">9人打ち (Full Ring)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Heroのポジション:</label>
+        <select id="heroPosSelect"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Heroのハンド (2枚選択):</label>
+        <div class="selected-cards-display">
+          <div id="card1" class="card-slot active" onclick="selectCardSlot(0)">1枚目: ?</div>
+          <div id="card2" class="card-slot" onclick="selectCardSlot(1)">2枚目: ?</div>
+        </div>
+
+        <div class="keypad-ranks">
+          <button onclick="pickRank('A')">A</button>
+          <button onclick="pickRank('K')">K</button>
+          <button onclick="pickRank('Q')">Q</button>
+          <button onclick="pickRank('J')">J</button>
+          <button onclick="pickRank('T')">10</button>
+          <button onclick="pickRank('9')">9</button>
+          <button onclick="pickRank('8')">8</button>
+          <button onclick="pickRank('7')">7</button>
+          <button onclick="pickRank('6')">6</button>
+          <button onclick="pickRank('5')">5</button>
+          <button onclick="pickRank('4')">4</button>
+          <button onclick="pickRank('3')">3</button>
+          <button onclick="pickRank('2')">2</button>
+        </div>
+
+        <div class="keypad-suits">
+          <button onclick="pickSuit('s')" class="suit-btn suit-s">♠</button>
+          <button onclick="pickSuit('h')" class="suit-btn suit-h">♥</button>
+          <button onclick="pickSuit('d')" class="suit-btn suit-d">♦</button>
+          <button onclick="pickSuit('c')" class="suit-btn suit-c">♣</button>
+        </div>
+      </div>
+
+      <button onclick="startHand()" class="btn-start">ハンド開始</button>
+    </div>
+  </div>
+
+  <!-- ボード入力モーダル -->
+  <div id="boardModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <h2 id="boardModalTitle">ボードカード選択</h2>
+      
+      <div id="boardSelectedSlots" class="selected-cards-display"></div>
+
+      <div class="keypad-ranks">
+        <button onclick="pickBoardRank('A')">A</button>
+        <button onclick="pickBoardRank('K')">K</button>
+        <button onclick="pickBoardRank('Q')">Q</button>
+        <button onclick="pickBoardRank('J')">J</button>
+        <button onclick="pickBoardRank('T')">10</button>
+        <button onclick="pickBoardRank('9')">9</button>
+        <button onclick="pickBoardRank('8')">8</button>
+        <button onclick="pickBoardRank('7')">7</button>
+        <button onclick="pickBoardRank('6')">6</button>
+        <button onclick="pickBoardRank('5')">5</button>
+        <button onclick="pickBoardRank('4')">4</button>
+        <button onclick="pickBoardRank('3')">3</button>
+        <button onclick="pickBoardRank('2')">2</button>
+      </div>
+
+      <div class="keypad-suits">
+        <button onclick="pickBoardSuit('s')" class="suit-btn suit-s">♠</button>
+        <button onclick="pickBoardSuit('h')" class="suit-btn suit-h">♥</button>
+        <button onclick="pickBoardSuit('d')" class="suit-btn suit-d">♦</button>
+        <button onclick="pickBoardSuit('c')" class="suit-btn suit-c">♣</button>
+      </div>
+
+      <button onclick="confirmBoardCards()" id="boardConfirmBtn" class="btn-start" disabled>決定</button>
+    </div>
+  </div>
+
+  <!-- ベット手入力キーパッドモーダル -->
+  <div id="customBetModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content numpad-modal">
+      <h2>Bet/Raise 額入力 (BB)</h2>
+      
+      <div id="customBetValue" class="numpad-display">2.5</div>
+
+      <div class="numpad-grid">
+        <button onclick="appendBetNum('7')">7</button>
+        <button onclick="appendBetNum('8')">8</button>
+        <button onclick="appendBetNum('9')">9</button>
+        <button onclick="appendBetNum('4')">4</button>
+        <button onclick="appendBetNum('5')">5</button>
+        <button onclick="appendBetNum('6')">6</button>
+        <button onclick="appendBetNum('1')">1</button>
+        <button onclick="appendBetNum('2')">2</button>
+        <button onclick="appendBetNum('3')">3</button>
+        <button onclick="appendBetNum('.')">.</button>
+        <button onclick="appendBetNum('0')">0</button>
+        <button onclick="clearBetNum()" class="btn-clear">C</button>
+      </div>
+
+      <div class="modal-actions">
+        <button onclick="closeCustomBetModal()" class="btn-cancel">キャンセル</button>
+        <button onclick="confirmCustomBet()" class="btn-confirm">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
