@@ -4,79 +4,104 @@ window.onload = () => {
   renderHistory();
 };
 
-function getSavedHands() {
-  const data = localStorage.getItem('poker_hand_history');
-  return data ? JSON.parse(data) : [];
+function renderHistory() {
+  const historyList = document.getElementById("historyList");
+  const history = JSON.parse(localStorage.getItem("poker_hand_history") || "[]");
+
+  if (history.length === 0) {
+    historyList.innerHTML = `<div class="empty-msg">保存された履歴はありません。</div>`;
+    return;
+  }
+
+  let filtered = history;
+  if (currentFilter === 'fav') {
+    filtered = history.filter(h => h.favorite);
+  }
+
+  if (filtered.length === 0) {
+    historyList.innerHTML = `<div class="empty-msg">お気に入りの履歴はありません。</div>`;
+    return;
+  }
+
+  historyList.innerHTML = "";
+
+  filtered.forEach(item => {
+    const card = document.createElement("div");
+    card.className = `history-card ${item.favorite ? 'favorite' : ''}`;
+
+    const dateStr = new Date(item.timestamp).toLocaleString("ja-JP");
+    const logsText = item.logs.join("\n");
+
+    card.innerHTML = `
+      <div class="history-card-header">
+        <span class="star-btn ${item.favorite ? 'active' : ''}" onclick="toggleFavorite(${item.id})">★</span>
+        <span class="history-summary">${item.summary}</span>
+        <div class="card-header-actions">
+          <button class="btn-copy-history" onclick="copyLogsFromHistory(${item.id})">コピー</button>
+          <button class="btn-delete-item" onclick="deleteHistory(${item.id})">削除</button>
+        </div>
+      </div>
+      <div class="history-date">${dateStr} (${item.playerCount}-max)</div>
+      <div class="history-logs">${escapeHtml(logsText)}</div>
+    `;
+
+    historyList.appendChild(card);
+  });
 }
 
-function saveHands(hands) {
-  localStorage.setItem('poker_hand_history', JSON.stringify(hands));
-}
-
-function filterHistory(type) {
-  currentFilter = type;
-  document.getElementById('filterAll').classList.toggle('active', type === 'all');
-  document.getElementById('filterFav').classList.toggle('active', type === 'fav');
+function filterHistory(filterType) {
+  currentFilter = filterType;
+  document.getElementById("filterAll").classList.toggle("active", filterType === 'all');
+  document.getElementById("filterFav").classList.toggle("active", filterType === 'fav');
   renderHistory();
 }
 
 function toggleFavorite(id) {
-  const hands = getSavedHands();
-  const target = hands.find(h => h.id === id);
+  const history = JSON.parse(localStorage.getItem("poker_hand_history") || "[]");
+  const target = history.find(h => h.id === id);
   if (target) {
-    target.isFavorite = !target.isFavorite;
-    saveHands(hands);
+    target.favorite = !target.favorite;
+    localStorage.setItem("poker_hand_history", JSON.stringify(history));
     renderHistory();
   }
 }
 
-function deleteHand(id) {
-  if (!confirm('このハンド履歴を削除しますか？')) return;
-  let hands = getSavedHands();
-  hands = hands.filter(h => h.id !== id);
-  saveHands(hands);
-  renderHistory();
+function deleteHistory(id) {
+  if (confirm("この履歴を削除しますか？")) {
+    let history = JSON.parse(localStorage.getItem("poker_hand_history") || "[]");
+    history = history.filter(h => h.id !== id);
+    localStorage.setItem("poker_hand_history", JSON.stringify(history));
+    renderHistory();
+  }
 }
 
 function clearAllHistory() {
-  if (!confirm('お気に入り以外の履歴をすべて削除しますか？')) return;
-  let hands = getSavedHands();
-  hands = hands.filter(h => h.isFavorite);
-  saveHands(hands);
-  renderHistory();
+  if (confirm("すべての履歴を削除しますか？（復元できません）")) {
+    localStorage.removeItem("poker_hand_history");
+    renderHistory();
+  }
 }
 
-function renderHistory() {
-  const container = document.getElementById('historyList');
-  let hands = getSavedHands();
-
-  if (currentFilter === 'fav') {
-    hands = hands.filter(h => h.isFavorite);
+// 履歴個別ログのコピー機能
+function copyLogsFromHistory(id) {
+  const history = JSON.parse(localStorage.getItem("poker_hand_history") || "[]");
+  const target = history.find(h => h.id === id);
+  
+  if (target && target.logs) {
+    const textToCopy = target.logs.join("\n");
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      alert("このハンドのログをクリップボードにコピーしました！");
+    }).catch(err => {
+      console.error("Copy failed", err);
+      alert("コピーに失敗しました");
+    });
   }
+}
 
-  if (hands.length === 0) {
-    container.innerHTML = '<div class="empty-msg">保存されたハンド履歴はありません。</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-  hands.forEach(hand => {
-    const card = document.createElement('div');
-    card.className = `history-card ${hand.isFavorite ? 'favorite' : ''}`;
-    
-    const logsHtml = hand.logs.map(log => `<div>${log}</div>`).join('');
-
-    card.innerHTML = `
-      <div class="history-card-header">
-        <span class="star-btn ${hand.isFavorite ? 'active' : ''}" onclick="toggleFavorite('${hand.id}')">★</span>
-        <span class="history-date">${hand.timestamp}</span>
-        <span class="history-summary">${hand.heroPos} [${hand.heroCards.join(' ')}] / Pot: ${hand.pot}BB</span>
-        <button class="btn-delete-item" onclick="deleteHand('${hand.id}')">削除</button>
-      </div>
-      <div class="history-logs">
-        ${logsHtml}
-      </div>
-    `;
-    container.appendChild(card);
-  });
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
 }

@@ -1,520 +1,448 @@
-// 2〜9名に対応するポジションマップ定義
-const POSITIONS = {
-  2: ['SB', 'BB'],
-  3: ['SB', 'BB', 'BTN'],
-  4: ['SB', 'BB', 'CO', 'BTN'],
-  5: ['SB', 'BB', 'MP', 'CO', 'BTN'],
-  6: ['SB', 'BB', 'UTG', 'MP', 'CO', 'BTN'],
-  7: ['SB', 'BB', 'UTG', 'MP', 'HJ', 'CO', 'BTN'],
-  8: ['SB', 'BB', 'UTG', 'UTG+1', 'MP', 'HJ', 'CO', 'BTN'],
-  9: ['SB', 'BB', 'UTG', 'UTG+1', 'MP', 'HJ', 'CO', 'BTN', 'UTG+2']
+// 定数定義
+const POSITIONS_BY_SIZE = {
+  2: ["SB", "BB"],
+  3: ["BTN", "SB", "BB"],
+  4: ["CO", "BTN", "SB", "BB"],
+  5: ["MP", "CO", "BTN", "SB", "BB"],
+  6: ["UTG", "MP", "CO", "BTN", "SB", "BB"],
+  7: ["UTG", "LJ", "HJ", "CO", "BTN", "SB", "BB"],
+  8: ["UTG", "UTG+1", "LJ", "HJ", "CO", "BTN", "SB", "BB"],
+  9: ["UTG", "UTG+1", "UTG+2", "LJ", "HJ", "CO", "BTN", "SB", "BB"]
 };
 
-let historyStack = [];
-let currentIndex = -1;
+const STREETS = ["PREFLOP", "FLOP", "TURN", "RIVER"];
 
-// Heroカード選択用
-let heroCards = ['', ''];
-let selectedSlot = 0;
-let tempRank = '';
+// アプリケーション状態
+let state = {
+  playerCount: 6,
+  positions: [],
+  heroPos: "",
+  heroCards: ["", ""],
+  activeSlotIndex: 0,
+  
+  street: "PREFLOP",
+  boardCards: [],
+  pot: 1.5,
+  currentBet: 1.0,
+  lastRaiseAmount: 1.0,
+  players: [],
+  currentTurnIndex: 0,
+  logs: [],
 
-// ボード入力用
-let currentBoardTargetStreet = '';
-let targetBoardCount = 3;
-let tempBoardCards = [];
-let tempBoardRank = '';
-let boardSelectedSlotIndex = 0;
+  // ボード選択モーダル状態
+  boardSelectedCards: [],
+  activeBoardSlotIndex: 0,
+  tempRank: "",
+  
+  // テンキー入力状態
+  customBetStr: "2.5",
 
-// ベット額手入力用
-let customBetStr = '2.5';
+  // 履歴ID
+  handId: null
+};
 
-window.onload = () => { updatePositions(); };
+window.onload = () => {
+  updatePositions();
+  document.getElementById("setupModal").style.display = "flex";
+};
 
+// モーダル設定
 function updatePositions() {
-  const size = document.getElementById('tableSizeSelect').value;
-  const select = document.getElementById('heroPosSelect');
-  select.innerHTML = '';
-  if (POSITIONS[size]) {
-    POSITIONS[size].forEach(pos => {
-      const opt = document.createElement('option');
-      opt.value = pos;
-      opt.textContent = pos;
-      select.appendChild(opt);
-    });
-  }
-}
-
-// 既に使用されているカードを取得するヘルパー関数
-function getUsedCards(excludeCurrentSlot = true, isBoardMode = false) {
-  const used = new Set();
-
-  if (currentIndex >= 0 && historyStack[currentIndex]) {
-    historyStack[currentIndex].board.forEach(c => used.add(c));
-  }
-
-  if (!isBoardMode) {
-    heroCards.forEach((c, idx) => {
-      if (c && !(excludeCurrentSlot && idx === selectedSlot)) {
-        used.add(c);
-      }
-    });
-  } else {
-    heroCards.forEach(c => { if (c) used.add(c); });
-    tempBoardCards.forEach((c, idx) => {
-      if (c && !(excludeCurrentSlot && idx === boardSelectedSlotIndex)) {
-        used.add(c);
-      }
-    });
-  }
-
-  return used;
-}
-
-function updateSuitButtonsState(modalSelector, selectedRank, isBoardMode = false) {
-  const suits = ['s', 'h', 'd', 'c'];
-  const usedCards = getUsedCards(true, isBoardMode);
-
-  suits.forEach(suit => {
-    const btn = document.querySelector(`${modalSelector} .suit-${suit}`);
-    if (btn) {
-      if (selectedRank) {
-        const targetCard = selectedRank + suit;
-        if (usedCards.has(targetCard)) {
-          btn.disabled = true;
-          btn.style.opacity = '0.2';
-          btn.style.cursor = 'not-allowed';
-        } else {
-          btn.disabled = false;
-          btn.style.opacity = '1';
-          btn.style.cursor = 'pointer';
-        }
-      } else {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-      }
-    }
+  const count = parseInt(document.getElementById("tableSizeSelect").value);
+  const positions = POSITIONS_BY_SIZE[count];
+  const heroSelect = document.getElementById("heroPosSelect");
+  heroSelect.innerHTML = "";
+  positions.forEach(pos => {
+    const opt = document.createElement("option");
+    opt.value = pos;
+    opt.textContent = pos;
+    heroSelect.appendChild(opt);
   });
 }
 
 function selectCardSlot(index) {
-  selectedSlot = index;
-  document.getElementById('card1').classList.toggle('active', index === 0);
-  document.getElementById('card2').classList.toggle('active', index === 1);
-  clearRankSelection('#setupModal');
+  state.activeSlotIndex = index;
+  document.getElementById("card1").classList.toggle("active", index === 0);
+  document.getElementById("card2").classList.toggle("active", index === 1);
 }
 
-function pickRank(rank) { 
-  tempRank = rank;
-  highlightSelectedRank('#setupModal', rank);
-  updateSuitButtonsState('#setupModal', rank, false);
-}
-
-function pickSuit(suit) {
-  if (!tempRank) return alert('先に数字(ランク)を選択してください');
-  const cardStr = tempRank + suit.toLowerCase();
-  
-  const usedCards = getUsedCards(true, false);
-  if (usedCards.has(cardStr)) {
-    return alert(`カード ${cardStr} はすでに入力・使用されています。`);
-  }
-
-  heroCards[selectedSlot] = cardStr;
-  document.getElementById(`card${selectedSlot + 1}`).textContent = cardStr;
-  
-  clearRankSelection('#setupModal');
-  if (selectedSlot === 0) selectCardSlot(1);
-  tempRank = '';
-}
-
-function pickBoardRank(rank) {
-  tempBoardRank = rank;
-  highlightSelectedRank('#boardModal', rank);
-  updateSuitButtonsState('#boardModal', rank, true);
-}
-
-function pickBoardSuit(suit) {
-  if (!tempBoardRank) return alert('先に数字(ランク)を選択してください');
-  const cardStr = tempBoardRank + suit.toLowerCase();
-  
-  const usedCards = getUsedCards(true, true);
-  if (usedCards.has(cardStr)) {
-    return alert(`カード ${cardStr} はすでに入力・使用されています。`);
-  }
-
-  tempBoardCards[boardSelectedSlotIndex] = cardStr;
-  document.getElementById(`boardSlot${boardSelectedSlotIndex}`).textContent = cardStr;
-
-  clearRankSelection('#boardModal');
-
-  if (boardSelectedSlotIndex < targetBoardCount - 1) {
-    boardSelectedSlotIndex++;
-    document.querySelectorAll('#boardSelectedSlots .card-slot').forEach((s, idx) => {
-      s.classList.toggle('active', idx === boardSelectedSlotIndex);
-    });
-  }
-
-  if (tempBoardCards.every(c => c !== '')) {
-    document.getElementById('boardConfirmBtn').disabled = false;
-  }
-  tempBoardRank = '';
-}
-
-function highlightSelectedRank(modalSelector, rank) {
-  const buttons = document.querySelectorAll(`${modalSelector} .keypad-ranks button`);
-  buttons.forEach(btn => {
-    if (btn.textContent === (rank === 'T' ? '10' : rank)) {
-      btn.classList.add('selected');
-    } else {
-      btn.classList.remove('selected');
-    }
+function pickRank(rank) {
+  state.tempRank = rank;
+  document.querySelectorAll(".keypad-ranks button").forEach(b => {
+    b.classList.toggle("selected", b.textContent === (rank === 'T' ? '10' : rank));
   });
 }
 
-function clearRankSelection(modalSelector) {
-  const buttons = document.querySelectorAll(`${modalSelector} .keypad-ranks button`);
-  buttons.forEach(btn => btn.classList.remove('selected'));
-  updateSuitButtonsState(modalSelector, '', modalSelector === '#boardModal');
-}
+function pickSuit(suit) {
+  if (!state.tempRank) return;
+  const cardStr = state.tempRank + suit;
+  state.heroCards[state.activeSlotIndex] = cardStr;
+  
+  document.getElementById(`card${state.activeSlotIndex + 1}`).textContent = 
+    `${state.activeSlotIndex + 1}枚目: ${formatCard(cardStr)}`;
 
-function startHand() {
-  if (!heroCards[0] || !heroCards[1]) return alert('Heroのハンドを2枚選択してください');
-  if (heroCards[0] === heroCards[1]) return alert('同じカードを2枚選択することはできません');
+  state.tempRank = "";
+  document.querySelectorAll(".keypad-ranks button").forEach(b => b.classList.remove("selected"));
 
-  const size = parseInt(document.getElementById('tableSizeSelect').value);
-  const heroPos = document.getElementById('heroPosSelect').value;
-
-  const initialPlayers = POSITIONS[size].map((pos, idx) => ({
-    seat: idx,
-    position: pos,
-    isHero: pos === heroPos,
-    isFolded: false,
-    currentBet: pos === 'SB' ? 0.5 : (pos === 'BB' ? 1.0 : 0),
-    hasActed: false
-  }));
-
-  const firstTurnIndex = size === 2 ? 0 : 2 % size;
-
-  const initialState = {
-    handId: 'hand_' + Date.now(),
-    heroPos: heroPos,
-    heroCards: [...heroCards],
-    street: 'PREFLOP',
-    pot: 1.5,
-    highestBet: 1.0,
-    activeTurnIndex: firstTurnIndex,
-    board: [],
-    players: initialPlayers,
-    logs: [`--- PREFLOP (Hero: ${heroPos} [${heroCards.join(' ')}]) ---`]
-  };
-
-  historyStack = [];
-  currentIndex = -1;
-  pushState(initialState);
-  document.getElementById('setupModal').style.display = 'none';
-}
-
-function pushState(newState) {
-  historyStack = historyStack.slice(0, currentIndex + 1);
-  historyStack.push(JSON.parse(JSON.stringify(newState)));
-  currentIndex = historyStack.length - 1;
-  render();
-}
-
-function undo() {
-  if (currentIndex > 0) {
-    currentIndex--;
-    render();
+  if (state.activeSlotIndex === 0) {
+    selectCardSlot(1);
   }
 }
 
-function resetHand() {
-  heroCards = ['', ''];
-  document.getElementById('card1').textContent = '1枚目: ?';
-  document.getElementById('card2').textContent = '2枚目: ?';
-  selectCardSlot(0);
-  document.getElementById('setupModal').style.display = 'flex';
+function formatCard(c) {
+  if (!c) return "?";
+  const rank = c[0] === 'T' ? '10' : c[0];
+  const suitMap = { s: '♠', h: '♥', d: '♦', c: '♣' };
+  return rank + suitMap[c[1]];
+}
+
+// ハンド開始
+function startHand() {
+  if (!state.heroCards[0] || !state.heroCards[1]) {
+    alert("Heroのカードを2枚選択してください");
+    return;
+  }
+
+  state.playerCount = parseInt(document.getElementById("tableSizeSelect").value);
+  state.positions = POSITIONS_BY_SIZE[state.playerCount];
+  state.heroPos = document.getElementById("heroPosSelect").value;
+  state.handId = Date.now();
+
+  state.street = "PREFLOP";
+  state.boardCards = [];
+  state.pot = 1.5;
+  state.currentBet = 1.0;
+  state.lastRaiseAmount = 1.0;
+  state.logs = [];
+
+  state.players = state.positions.map(pos => {
+    let currentInPot = 0;
+    if (pos === "SB") currentInPot = 0.5;
+    if (pos === "BB") currentInPot = 1.0;
+    return {
+      pos: pos,
+      isHero: pos === state.heroPos,
+      isFolded: false,
+      currentInPot: currentInPot
+    };
+  });
+
+  if (state.playerCount === 2) {
+    state.currentTurnIndex = 0; // SBから
+  } else {
+    const utgIndex = state.positions.indexOf("UTG");
+    state.currentTurnIndex = utgIndex !== -1 ? utgIndex : 0;
+  }
+
+  document.getElementById("setupModal").style.display = "none";
+
+  addLog(`--- New Hand (${state.playerCount}-max) ---`);
+  addLog(`Hero: ${state.heroPos} [${formatCard(state.heroCards[0])} ${formatCard(state.heroCards[1])}]`);
+  
+  updateUI();
+  saveCurrentHandToStorage();
+}
+
+// アクション処理
+function handleAction(actionType, targetBet = 0) {
+  const p = state.players[state.currentTurnIndex];
+  let logText = `${p.pos}: ${actionType}`;
+
+  if (actionType === 'FOLD') {
+    p.isFolded = true;
+  } else if (actionType === 'CHECK') {
+    // 処理なし
+  } else if (actionType === 'CALL') {
+    const callAmount = state.currentBet - p.currentInPot;
+    state.pot += callAmount;
+    p.currentInPot = state.currentBet;
+    logText += ` (${state.currentBet} BB)`;
+  } else if (actionType === 'RAISE' || actionType === 'BET') {
+    const addAmount = targetBet - p.currentInPot;
+    state.pot += addAmount;
+    state.lastRaiseAmount = targetBet - state.currentBet;
+    state.currentBet = targetBet;
+    p.currentInPot = targetBet;
+    logText += ` to ${targetBet} BB`;
+  } else if (actionType === 'ALL IN') {
+    if (targetBet > 0) {
+      const addAmount = targetBet - p.currentInPot;
+      state.pot += addAmount;
+      if (targetBet > state.currentBet) {
+        state.lastRaiseAmount = targetBet - state.currentBet;
+        state.currentBet = targetBet;
+      }
+      p.currentInPot = targetBet;
+      logText += ` (${targetBet} BB)`;
+    } else {
+      logText += `!`;
+    }
+  }
+
+  addLog(logText);
+  nextTurn();
 }
 
 function handleCheckCall() {
-  const state = historyStack[currentIndex];
-  const player = state.players[state.activeTurnIndex];
-  const callAmount = state.highestBet - player.currentBet;
-  
-  if (callAmount === 0) {
-    handleAction('CHECK', 0);
+  const p = state.players[state.currentTurnIndex];
+  if (p.currentInPot === state.currentBet) {
+    handleAction('CHECK');
   } else {
-    handleAction('CALL', callAmount);
+    handleAction('CALL');
   }
 }
 
 function handleSizingAction(multiplier) {
-  const state = historyStack[currentIndex];
-  if (!state) return;
-
-  const baseBet = state.highestBet > 0 ? state.highestBet : 1.0;
-  const targetAmount = Math.round(baseBet * multiplier * 10) / 10;
-
-  const type = state.highestBet > 0 ? 'RAISE' : 'BET';
-  handleAction(type, targetAmount);
-}
-
-function openCustomBetModal() {
-  const state = historyStack[currentIndex];
-  if (!state) return;
-
-  const minBet = state.highestBet > 0 ? state.highestBet * 2 : 2.0;
-  customBetStr = minBet.toFixed(1);
-  document.getElementById('customBetValue').textContent = customBetStr;
-  document.getElementById('customBetModal').style.display = 'flex';
-}
-
-function closeCustomBetModal() {
-  document.getElementById('customBetModal').style.display = 'none';
-}
-
-function appendBetNum(num) {
-  if (num === '.' && customBetStr.includes('.')) return;
-  if (customBetStr === '0' || customBetStr === '') {
-    customBetStr = num === '.' ? '0.' : num;
+  let targetBet = 0;
+  if (state.street === "PREFLOP") {
+    targetBet = parseFloat((state.currentBet * multiplier).toFixed(1));
   } else {
-    customBetStr += num;
+    targetBet = parseFloat((state.pot * (multiplier / 3.0)).toFixed(1));
   }
-  document.getElementById('customBetValue').textContent = customBetStr;
+  handleAction('RAISE', targetBet);
 }
 
-function clearBetNum() {
-  customBetStr = '0';
-  document.getElementById('customBetValue').textContent = customBetStr;
-}
-
-function confirmCustomBet() {
-  const val = parseFloat(customBetStr);
-  if (isNaN(val) || val <= 0) return alert('正しいBB数を入力してください');
-  
-  closeCustomBetModal();
-  const state = historyStack[currentIndex];
-  const type = state.highestBet > 0 ? 'RAISE' : 'BET';
-  handleAction(type, val);
-}
-
-function handleAction(type, amount) {
-  const state = JSON.parse(JSON.stringify(historyStack[currentIndex]));
-  const player = state.players[state.activeTurnIndex];
-
-  let logMsg = '';
-
-  if (type === 'FOLD') {
-    player.isFolded = true;
-    logMsg = `${player.position}: FOLD`;
-  } else if (type === 'CHECK') {
-    player.hasActed = true;
-    logMsg = `${player.position}: CHECK`;
-  } else if (type === 'CALL') {
-    state.pot += amount;
-    player.currentBet += amount;
-    player.hasActed = true;
-    logMsg = `${player.position}: CALL ${amount.toFixed(1)}BB`;
-  } else if (type === 'BET' || type === 'RAISE') {
-    const addAmount = amount - player.currentBet;
-    state.pot += addAmount;
-    player.currentBet = amount;
-    state.highestBet = amount;
-    player.hasActed = true;
-    
-    state.players.forEach(p => {
-      if (!p.isFolded && p.position !== player.position) p.hasActed = false;
-    });
-    logMsg = `${player.position}: ${type} ${amount}BB`;
-  }
-
-  state.logs.push(logMsg);
-
+function nextTurn() {
   const activePlayers = state.players.filter(p => !p.isFolded);
   if (activePlayers.length === 1) {
-    const winner = activePlayers[0];
-    state.street = 'FINISHED';
-    state.logs.push(`--- ${winner.position} の勝利 (全員Fold) / Pot: ${state.pot.toFixed(1)}BB ---`);
-    pushState(state);
-    saveCurrentHandToStorage(state);
+    addLog(`Winner: ${activePlayers[0].pos} (Pot: ${state.pot} BB)`);
+    updateUI();
+    saveCurrentHandToStorage();
     return;
   }
 
-  if (checkStreetComplete(state)) {
-    moveToNextStreet(state);
-    return;
+  let nextIdx = (state.currentTurnIndex + 1) % state.playerCount;
+  let loopCount = 0;
+  while (state.players[nextIdx].isFolded && loopCount < state.playerCount) {
+    nextIdx = (nextIdx + 1) % state.playerCount;
+    loopCount++;
   }
 
-  let nextIndex = (state.activeTurnIndex + 1) % state.players.length;
-  while (state.players[nextIndex].isFolded) {
-    nextIndex = (nextIndex + 1) % state.players.length;
-  }
-  state.activeTurnIndex = nextIndex;
+  const isStreetOver = checkStreetCompletion(nextIdx);
 
-  pushState(state);
-}
-
-function checkStreetComplete(state) {
-  const activePlayers = state.players.filter(p => !p.isFolded);
-  const allMatched = activePlayers.every(p => p.currentBet === state.highestBet);
-  const allActed = activePlayers.every(p => p.hasActed);
-  return allMatched && allActed;
-}
-
-function moveToNextStreet(state) {
-  state.players.forEach(p => {
-    p.currentBet = 0;
-    p.hasActed = false;
-  });
-  state.highestBet = 0;
-
-  if (state.street === 'PREFLOP') {
-    openBoardModal('FLOP', 3, state);
-  } else if (state.street === 'FLOP') {
-    openBoardModal('TURN', 1, state);
-  } else if (state.street === 'TURN') {
-    openBoardModal('RIVER', 1, state);
+  if (isStreetOver) {
+    advanceStreet();
   } else {
-    state.street = 'SHOWDOWN';
-    state.logs.push(`--- SHOWDOWN / 終了 ---`);
-    pushState(state);
-    saveCurrentHandToStorage(state);
+    state.currentTurnIndex = nextIdx;
   }
+
+  updateUI();
+  saveCurrentHandToStorage();
 }
 
-function openBoardModal(targetStreet, count, state) {
-  currentBoardTargetStreet = targetStreet;
-  targetBoardCount = count;
-  tempBoardCards = new Array(count).fill('');
-  boardSelectedSlotIndex = 0;
+function checkStreetCompletion(nextIdx) {
+  const active = state.players.filter(p => !p.isFolded);
+  const allMatched = active.every(p => p.currentInPot === state.currentBet);
+  
+  if (!allMatched) return false;
 
-  document.getElementById('boardModalTitle').textContent = `${targetStreet} カードを選択 (${count}枚)`;
+  if (state.street === "PREFLOP") {
+    const bbIdx = state.positions.indexOf("BB");
+    if (state.players[bbIdx].isFolded) return true;
+    if (state.currentTurnIndex === bbIdx) return true;
+    return false;
+  }
+  
+  return true;
+}
 
-  const slotsContainer = document.getElementById('boardSelectedSlots');
-  slotsContainer.innerHTML = '';
-  for (let i = 0; i < count; i++) {
-    const div = document.createElement('div');
-    div.className = `card-slot ${i === 0 ? 'active' : ''}`;
-    div.id = `boardSlot${i}`;
-    div.textContent = `${i+1}枚目: ?`;
-    div.onclick = () => {
-      boardSelectedSlotIndex = i;
-      document.querySelectorAll('#boardSelectedSlots .card-slot').forEach((s, idx) => {
-        s.classList.toggle('active', idx === i);
-      });
-      clearRankSelection('#boardModal');
-    };
-    slotsContainer.appendChild(div);
+function advanceStreet() {
+  const currentIdx = STREETS.indexOf(state.street);
+  if (currentIdx === STREETS.length - 1) {
+    addLog(`Showdown! Final Pot: ${state.pot} BB`);
+    return;
   }
 
-  clearRankSelection('#boardModal');
-  document.getElementById('boardConfirmBtn').disabled = true;
-  document.getElementById('boardModal').style.display = 'flex';
-  pushState(state);
+  const nextStreet = STREETS[currentIdx + 1];
+  openBoardModal(nextStreet);
+}
+
+// ボード入力モーダル制御
+function openBoardModal(nextStreet) {
+  state.street = nextStreet;
+  state.players.forEach(p => p.currentInPot = 0);
+  state.currentBet = 0;
+  state.lastRaiseAmount = 1.0;
+
+  let sbIdx = state.positions.indexOf("SB");
+  if (sbIdx === -1) sbIdx = 0;
+  let nextIdx = sbIdx;
+  while (state.players[nextIdx].isFolded) {
+    nextIdx = (nextIdx + 1) % state.playerCount;
+  }
+  state.currentTurnIndex = nextIdx;
+
+  const countNeeded = nextStreet === "FLOP" ? 3 : 1;
+  state.boardSelectedCards = new Array(countNeeded).fill("");
+  state.activeBoardSlotIndex = 0;
+
+  document.getElementById("boardModalTitle").textContent = `${nextStreet} カード選択 (${countNeeded}枚)`;
+  renderBoardSlots();
+  document.getElementById("boardModal").style.display = "flex";
+}
+
+function renderBoardSlots() {
+  const container = document.getElementById("boardSelectedSlots");
+  container.innerHTML = "";
+  state.boardSelectedCards.forEach((c, idx) => {
+    const slot = document.createElement("div");
+    slot.className = `card-slot ${idx === state.activeBoardSlotIndex ? 'active' : ''}`;
+    slot.textContent = `${idx + 1}枚目: ${formatCard(c)}`;
+    slot.onclick = () => {
+      state.activeBoardSlotIndex = idx;
+      renderBoardSlots();
+    };
+    container.appendChild(slot);
+  });
+  checkBoardConfirmBtn();
+}
+
+function pickBoardRank(rank) {
+  state.tempRank = rank;
+}
+
+function pickBoardSuit(suit) {
+  if (!state.tempRank) return;
+  const cardStr = state.tempRank + suit;
+  state.boardSelectedCards[state.activeBoardSlotIndex] = cardStr;
+  state.tempRank = "";
+
+  if (state.activeBoardSlotIndex < state.boardSelectedCards.length - 1) {
+    state.activeBoardSlotIndex++;
+  }
+  renderBoardSlots();
+}
+
+function checkBoardConfirmBtn() {
+  const allFilled = state.boardSelectedCards.every(c => c !== "");
+  document.getElementById("boardConfirmBtn").disabled = !allFilled;
 }
 
 function confirmBoardCards() {
-  document.getElementById('boardModal').style.display = 'none';
-  const state = JSON.parse(JSON.stringify(historyStack[currentIndex]));
+  state.boardCards.push(...state.boardSelectedCards);
+  document.getElementById("boardModal").style.display = "none";
 
-  state.street = currentBoardTargetStreet;
-  state.board.push(...tempBoardCards);
-  state.logs.push(`--- ${currentBoardTargetStreet} [ ${tempBoardCards.join(' ')} ] (Pot: ${state.pot.toFixed(1)}BB) ---`);
-
-  let nextTurn = 0;
-  while (state.players[nextTurn].isFolded) {
-    nextTurn = (nextTurn + 1) % state.players.length;
-  }
-  state.activeTurnIndex = nextTurn;
-
-  pushState(state);
+  const boardFormatted = state.boardCards.map(c => formatCard(c)).join(" ");
+  addLog(`--- ${state.street} [${boardFormatted}] ---`);
+  updateUI();
 }
 
-// ローカルストレージ自動保存＆最大50件ローテーション処理
-function saveCurrentHandToStorage(finalState) {
-  const storageKey = 'poker_hand_history';
-  let history = JSON.parse(localStorage.getItem(storageKey) || '[]');
+// テンキーモーダル制御
+function openCustomBetModal() {
+  const minBet = state.currentBet > 0 ? (state.currentBet + state.lastRaiseAmount) : 1.0;
+  state.customBetStr = minBet.toFixed(1);
+  document.getElementById("customBetValue").textContent = state.customBetStr;
+  document.getElementById("customBetModal").style.display = "flex";
+}
 
-  const existingIdx = history.findIndex(h => h.id === finalState.handId);
-  const now = new Date();
-  const dateStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+function closeCustomBetModal() {
+  document.getElementById("customBetModal").style.display = "none";
+}
 
-  const handData = {
-    id: finalState.handId,
-    timestamp: dateStr,
-    heroPos: finalState.heroPos,
-    heroCards: finalState.heroCards,
-    pot: finalState.pot.toFixed(1),
-    logs: finalState.logs,
-    isFavorite: existingIdx >= 0 ? history[existingIdx].isFavorite : false
-  };
-
-  if (existingIdx >= 0) {
-    history[existingIdx] = handData;
+function appendBetNum(char) {
+  if (char === '.' && state.customBetStr.includes('.')) return;
+  if (state.customBetStr === "0" && char !== '.') {
+    state.customBetStr = char;
   } else {
-    history.unshift(handData);
+    state.customBetStr += char;
   }
-
-  // 50件超え時にお気に入り以外の最古ハンドを削除
-  if (history.length > 50) {
-    for (let i = history.length - 1; i >= 0; i--) {
-      if (!history[i].isFavorite) {
-        history.splice(i, 1);
-        if (history.length <= 50) break;
-      }
-    }
-  }
-
-  localStorage.setItem(storageKey, JSON.stringify(history));
+  document.getElementById("customBetValue").textContent = state.customBetStr;
 }
 
-function render() {
-  const state = historyStack[currentIndex];
-  if (!state) return;
+function clearBetNum() {
+  state.customBetStr = "0";
+  document.getElementById("customBetValue").textContent = state.customBetStr;
+}
 
-  document.getElementById('streetDisplay').textContent = state.street;
-  document.getElementById('potDisplay').textContent = `Pot: ${state.pot.toFixed(1)} BB`;
-  document.getElementById('undoBtn').disabled = currentIndex <= 0;
-  document.getElementById('boardCardsDisplay').textContent = state.board.length > 0 ? state.board.join(' ') : 'なし';
-
-  const seatsContainer = document.getElementById('tableSeats');
-  seatsContainer.innerHTML = '';
-  state.players.forEach((p, idx) => {
-    const div = document.createElement('div');
-    div.className = `seat-card ${idx === state.activeTurnIndex && state.street !== 'FINISHED' && state.street !== 'SHOWDOWN' ? 'active' : ''} ${p.isFolded ? 'folded' : ''} ${p.isHero ? 'hero' : ''}`;
-    div.innerHTML = `
-      <strong>${p.position} ${p.isHero ? '(Hero)' : ''}</strong><br>
-      ${p.isFolded ? 'FOLD' : (p.currentBet > 0 ? `Bet: ${p.currentBet}BB` : '待機')}
-    `;
-    seatsContainer.appendChild(div);
-  });
-
-  if (state.street === 'FINISHED' || state.street === 'SHOWDOWN') {
-    document.getElementById('currentTurnDisplay').textContent = 'ハンド終了';
+function confirmCustomBet() {
+  const val = parseFloat(state.customBetStr);
+  if (isNaN(val) || val <= 0) {
+    alert("正しい数値を入力してください");
     return;
   }
+  closeCustomBetModal();
+  const actionType = state.currentBet === 0 ? 'BET' : 'RAISE';
+  handleAction(actionType, val);
+}
 
-  const activePlayer = state.players[state.activeTurnIndex];
-  document.getElementById('currentTurnDisplay').textContent = `${activePlayer.position} ${activePlayer.isHero ? '(Hero)' : ''}`;
+// UI更新
+function updateUI() {
+  document.getElementById("streetDisplay").textContent = state.street;
+  document.getElementById("potDisplay").textContent = `${state.pot.toFixed(1)} BB`;
+  
+  const boardText = state.boardCards.length > 0 
+    ? state.boardCards.map(c => formatCard(c)).join(" ")
+    : "なし";
+  document.getElementById("boardCardsDisplay").textContent = boardText;
 
-  const callAmount = state.highestBet - activePlayer.currentBet;
-  const checkCallBtn = document.getElementById('checkCallBtn');
-  if (callAmount === 0) {
-    checkCallBtn.textContent = 'CHECK';
-    checkCallBtn.style.background = '#0275d8';
+  const activeP = state.players[state.currentTurnIndex];
+  document.getElementById("currentTurnDisplay").textContent = activeP ? activeP.pos : "--";
+
+  const checkCallBtn = document.getElementById("checkCallBtn");
+  if (activeP && activeP.currentInPot === state.currentBet) {
+    checkCallBtn.textContent = "CHECK";
+    checkCallBtn.className = "btn-action btn-call";
   } else {
-    checkCallBtn.textContent = `CALL (${callAmount.toFixed(1)}BB)`;
-    checkCallBtn.style.background = '#f0ad4e';
+    const toCall = state.currentBet - (activeP ? activeP.currentInPot : 0);
+    checkCallBtn.textContent = `CALL (${toCall.toFixed(1)})`;
+    checkCallBtn.className = "btn-action btn-call";
   }
 
-  const raiseBtn = document.getElementById('raiseBtn');
-  if (state.highestBet > 0) {
-    raiseBtn.textContent = 'RAISE (手入力)';
-  } else {
-    raiseBtn.textContent = 'BET (手入力)';
-  }
+  const seatsGrid = document.getElementById("tableSeats");
+  seatsGrid.innerHTML = "";
+  state.players.forEach((p, idx) => {
+    const seat = document.createElement("div");
+    let className = "seat-card";
+    if (p.isFolded) className += " folded";
+    if (idx === state.currentTurnIndex && !p.isFolded) className += " active";
+    if (p.isHero) className += " hero";
 
-  const logArea = document.getElementById('logArea');
-  logArea.innerHTML = state.logs.join('<br>');
+    seat.className = className;
+    seat.innerHTML = `
+      <div><strong>${p.pos}</strong> ${p.isHero ? '(Hero)' : ''}</div>
+      <div>In: ${p.currentInPot.toFixed(1)} BB</div>
+    `;
+    seatsGrid.appendChild(seat);
+  });
+
+  const logArea = document.getElementById("logArea");
+  logArea.innerText = state.logs.join("\n");
   logArea.scrollTop = logArea.scrollHeight;
+}
+
+function addLog(text) {
+  state.logs.push(text);
+}
+
+function resetHand() {
+  if (confirm("現在のハンドを破棄して新規ハンドを開始しますか？")) {
+    document.getElementById("setupModal").style.display = "flex";
+  }
+}
+
+// ローカルストレージ保存
+function saveCurrentHandToStorage() {
+  if (!state.handId) return;
+
+  const history = JSON.parse(localStorage.getItem("poker_hand_history") || "[]");
+  const existingIdx = history.findIndex(h => h.id === state.handId);
+
+  const handRecord = {
+    id: state.handId,
+    timestamp: new Date().toISOString(),
+    heroPos: state.heroPos,
+    heroCards: state.heroCards,
+    playerCount: state.playerCount,
+    logs: state.logs,
+    summary: `${state.heroPos} [${formatCard(state.heroCards[0])}${formatCard(state.heroCards[1])}] | Pot: ${state.pot.toFixed(1)}BB`,
+    favorite: existingIdx !== -1 ? history[existingIdx].favorite : false
+  };
+
+  if (existingIdx !== -1) {
+    history[existingIdx] = handRecord;
+  } else {
+    history.unshift(handRecord);
+  }
+
+  localStorage.setItem("poker_hand_history", JSON.stringify(history));
 }

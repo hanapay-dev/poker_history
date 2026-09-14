@@ -11,7 +11,7 @@ body {
   padding: 10px;
 }
 
-/* ヘッダー（モーダルより上に表示させる設定を追加） */
+/* ヘッダー */
 .app-header {
   position: relative;
   z-index: 2000;
@@ -55,17 +55,6 @@ button {
 .btn-reset {
   background-color: #d9534f;
   color: white;
-}
-
-#undoBtn {
-  background-color: #f0ad4e;
-  color: white;
-}
-
-#undoBtn:disabled {
-  background-color: #555;
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* メインコンテナ */
@@ -151,19 +140,20 @@ button {
 
 .primary-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
 .btn-action {
   padding: 15px 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: white;
 }
 
 .btn-fold { background-color: #d9534f; }
 .btn-call { background-color: #0275d8; }
 .btn-raise { background-color: #5cb85c; }
+.btn-allin { background-color: #f0ad4e; }
 
 .sizing-presets {
   display: grid;
@@ -188,18 +178,19 @@ button {
 .log-section h3 {
   font-size: 0.9rem;
   color: #aaa;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 
 .log-box {
   background: #000;
-  padding: 8px;
+  padding: 10px;
   border-radius: 4px;
-  height: 120px;
+  height: 240px;
   overflow-y: auto;
   font-family: monospace;
   font-size: 0.85rem;
-  line-height: 1.4;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 /* モーダル共通 */
@@ -394,7 +385,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   padding-bottom: 6px;
   border-bottom: 1px solid #333;
 }
@@ -410,19 +401,29 @@ button {
   color: #f0ad4e;
 }
 
-.history-date {
-  font-size: 0.8rem;
-  color: #888;
-}
-
 .history-summary {
   font-weight: bold;
   color: #4da6ff;
   font-size: 0.9rem;
 }
 
-.btn-delete-item {
+.card-header-actions {
   margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.btn-copy-history {
+  padding: 4px 8px;
+  background-color: #0275d8;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.btn-delete-item {
   padding: 4px 8px;
   background-color: #444;
   color: #aaa;
@@ -430,6 +431,12 @@ button {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.75rem;
+}
+
+.history-date {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 6px;
 }
 
 .history-logs {
@@ -442,6 +449,7 @@ button {
   border-radius: 4px;
   max-height: 150px;
   overflow-y: auto;
+  white-space: pre-wrap;
 }
 
 .empty-msg {
