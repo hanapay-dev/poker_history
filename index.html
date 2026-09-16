@@ -3,194 +3,206 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Poker Action Logger</title>
+  <title>Poker Tracker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- ヘッダー -->
   <header class="app-header">
-    <h1>Poker Action Logger</h1>
+    <h1>Poker Tracker</h1>
     <div class="header-controls">
-      <a href="history.html" class="btn-link">履歴一覧</a>
-      <button onclick="resetHand()" class="btn-reset">新ハンド開始</button>
+      <button class="btn-guide" onclick="openGuideModal()">使い方</button>
+      <a href="history.html" class="btn-link">履歴画面へ</a>
+      <button class="btn-reset" onclick="resetHand()">新規ハンド</button>
     </div>
   </header>
 
-  <!-- メインコンテンツ -->
   <main class="main-container">
-
-    <!-- 状況表示エリア -->
     <section class="status-panel">
       <div class="status-item">
-        <span class="label">Street</span>
-        <span id="streetDisplay" class="value highlight">PREFLOP</span>
+        <span class="label">STREET</span>
+        <span class="value" id="streetDisplay">PREFLOP</span>
       </div>
       <div class="status-item">
-        <span class="label">Pot</span>
-        <span id="potDisplay" class="value">1.5 BB</span>
+        <span class="label">POT</span>
+        <span class="value highlight" id="potDisplay">1.5 BB</span>
       </div>
       <div class="status-item">
-        <span class="label">Board</span>
-        <span id="boardCardsDisplay" class="value cards-text">なし</span>
+        <span class="label">BOARD</span>
+        <span class="value cards-text" id="boardCardsDisplay">なし</span>
       </div>
       <div class="status-item">
-        <span class="label">Turn</span>
-        <span id="currentTurnDisplay" class="value turn-text">--</span>
+        <span class="label">TURN</span>
+        <span class="value turn-text" id="currentTurnDisplay">--</span>
       </div>
     </section>
 
-    <!-- テーブル・プレイヤー状態表示 -->
     <section class="table-section">
-      <div id="tableSeats" class="seats-grid">
-        <!-- JSで動的に表示 -->
-      </div>
+      <div class="seats-grid" id="tableSeats"></div>
     </section>
 
-    <!-- アクションボタンエリア -->
     <section class="action-section">
       <div class="primary-actions">
-        <button onclick="handleAction('FOLD', 0)" class="btn-action btn-fold">FOLD</button>
-        <button onclick="handleCheckCall()" id="checkCallBtn" class="btn-action btn-call">CHECK</button>
-        <button onclick="openCustomBetModal()" id="raiseBtn" class="btn-action btn-raise">RAISE (手入力)</button>
-        <button onclick="handleAction('ALL IN', 0)" class="btn-action btn-allin">ALL IN</button>
+        <button class="btn-action btn-fold" onclick="handleAction('FOLD')">FOLD</button>
+        <button class="btn-action btn-call" id="checkCallBtn" onclick="handleCheckCall()">CHECK</button>
+        <button class="btn-action btn-bet" id="betBtn" onclick="openCustomBetModal('BET')">BET (手入力)</button>
+        <button class="btn-action btn-raise" id="raiseBtn" onclick="openCustomBetModal('RAISE')">RAISE (手入力)</button>
       </div>
-
-      <!-- プリセット・サイジングボタン -->
       <div class="sizing-presets">
-        <button onclick="handleSizingAction(2.0)" class="btn-sizing">2.0x</button>
-        <button onclick="handleSizingAction(2.5)" class="btn-sizing">2.5x</button>
-        <button onclick="handleSizingAction(3.0)" class="btn-sizing">3.0x</button>
-        <button onclick="handleSizingAction(3.5)" class="btn-sizing">3.5x</button>
+        <button class="btn-sizing" onclick="handleSizingAction(2.0)">2.0x</button>
+        <button class="btn-sizing" onclick="handleSizingAction(2.5)">2.5x</button>
+        <button class="btn-sizing" onclick="handleSizingAction(3.0)">3.0x</button>
+        <button class="btn-sizing" onclick="handleSizingAction(3.5)">3.5x</button>
       </div>
     </section>
 
-    <!-- アクションログ表示エリア -->
     <section class="log-section">
       <h3>Hand Log</h3>
-      <div id="logArea" class="log-box"></div>
+      <div class="log-box" id="logArea"></div>
     </section>
-
   </main>
 
   <!-- 初期設定モーダル -->
-  <div id="setupModal" class="modal-overlay">
-    <div class="modal-content">
-      <h2>新規ハンド設定</h2>
-
+  <div class="modal-overlay" id="setupModal">
+    <div class="modal-content modal-large">
+      <div class="modal-header-nav">
+        <h2>新規ハンド設定</h2>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button type="button" class="btn-guide" onclick="openGuideModal()">使い方</button>
+          <a href="history.html" class="btn-link">履歴画面へ</a>
+        </div>
+      </div>
       <div class="form-group">
-        <label>人数（2〜9名）:</label>
+        <label>参加人数</label>
         <select id="tableSizeSelect" onchange="updatePositions()">
-          <option value="6" selected>6人打ち (6-max)</option>
-          <option value="2">2人打ち (HU)</option>
-          <option value="3">3人打ち</option>
-          <option value="4">4人打ち</option>
-          <option value="5">5人打ち</option>
-          <option value="7">7人打ち</option>
-          <option value="8">8人打ち</option>
-          <option value="9">9人打ち (Full Ring)</option>
+          <option value="6" selected>6-max</option>
+          <option value="2">2 (HU)</option>
+          <option value="3">3-max</option>
+          <option value="4">4-max</option>
+          <option value="5">5-max</option>
+          <option value="7">7-max</option>
+          <option value="8">8-max</option>
+          <option value="9">9-max</option>
         </select>
       </div>
-
       <div class="form-group">
-        <label>Heroのポジション:</label>
+        <label>Hero のポジション</label>
         <select id="heroPosSelect"></select>
       </div>
-
       <div class="form-group">
-        <label>Heroのハンド (2枚選択):</label>
+        <label>Hero のホールカード選択</label>
         <div class="selected-cards-display">
-          <div id="card1" class="card-slot active" onclick="selectCardSlot(0)">1枚目: ?</div>
-          <div id="card2" class="card-slot" onclick="selectCardSlot(1)">2枚目: ?</div>
-        </div>
-
-        <div class="keypad-ranks">
-          <button onclick="pickRank('A')">A</button>
-          <button onclick="pickRank('K')">K</button>
-          <button onclick="pickRank('Q')">Q</button>
-          <button onclick="pickRank('J')">J</button>
-          <button onclick="pickRank('T')">10</button>
-          <button onclick="pickRank('9')">9</button>
-          <button onclick="pickRank('8')">8</button>
-          <button onclick="pickRank('7')">7</button>
-          <button onclick="pickRank('6')">6</button>
-          <button onclick="pickRank('5')">5</button>
-          <button onclick="pickRank('4')">4</button>
-          <button onclick="pickRank('3')">3</button>
-          <button onclick="pickRank('2')">2</button>
-        </div>
-
-        <div class="keypad-suits">
-          <button onclick="pickSuit('s')" class="suit-btn suit-s">♠</button>
-          <button onclick="pickSuit('h')" class="suit-btn suit-h">♥</button>
-          <button onclick="pickSuit('d')" class="suit-btn suit-d">♦</button>
-          <button onclick="pickSuit('c')" class="suit-btn suit-c">♣</button>
+          <div class="card-slot active" id="card1" onclick="selectCardSlot(0)">1枚目: ?</div>
+          <div class="card-slot" id="card2" onclick="selectCardSlot(1)">2枚目: ?</div>
         </div>
       </div>
+      
+      <!-- 52枚カードグリッド -->
+      <div class="card-picker-grid" id="setupCardPicker"></div>
 
-      <button onclick="startHand()" class="btn-start">ハンド開始</button>
+      <button class="btn-start" id="setupConfirmBtn" onclick="startHand()" disabled>ハンド開始</button>
     </div>
   </div>
 
-  <!-- ボード入力モーダル -->
-  <div id="boardModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
+  <!-- ボード選択モーダル -->
+  <div class="modal-overlay" id="boardModal" style="display: none;">
+    <div class="modal-content modal-large">
       <h2 id="boardModalTitle">ボードカード選択</h2>
-      
-      <div id="boardSelectedSlots" class="selected-cards-display"></div>
-
-      <div class="keypad-ranks">
-        <button onclick="pickBoardRank('A')">A</button>
-        <button onclick="pickBoardRank('K')">K</button>
-        <button onclick="pickBoardRank('Q')">Q</button>
-        <button onclick="pickBoardRank('J')">J</button>
-        <button onclick="pickBoardRank('T')">10</button>
-        <button onclick="pickBoardRank('9')">9</button>
-        <button onclick="pickBoardRank('8')">8</button>
-        <button onclick="pickBoardRank('7')">7</button>
-        <button onclick="pickBoardRank('6')">6</button>
-        <button onclick="pickBoardRank('5')">5</button>
-        <button onclick="pickBoardRank('4')">4</button>
-        <button onclick="pickBoardRank('3')">3</button>
-        <button onclick="pickBoardRank('2')">2</button>
-      </div>
-
-      <div class="keypad-suits">
-        <button onclick="pickBoardSuit('s')" class="suit-btn suit-s">♠</button>
-        <button onclick="pickBoardSuit('h')" class="suit-btn suit-h">♥</button>
-        <button onclick="pickBoardSuit('d')" class="suit-btn suit-d">♦</button>
-        <button onclick="pickBoardSuit('c')" class="suit-btn suit-c">♣</button>
-      </div>
-
-      <button onclick="confirmBoardCards()" id="boardConfirmBtn" class="btn-start" disabled>決定</button>
+      <div class="selected-cards-display" id="boardSelectedSlots"></div>
+      <div class="card-picker-grid" id="boardCardPicker"></div>
+      <button class="btn-start" id="boardConfirmBtn" onclick="confirmBoardCards()" disabled>決定</button>
     </div>
   </div>
 
-  <!-- ベット手入力キーパッドモーダル -->
-  <div id="customBetModal" class="modal-overlay" style="display: none;">
+  <!-- テンキー入力モーダル -->
+  <div class="modal-overlay" id="customBetModal" style="display: none;">
     <div class="modal-content numpad-modal">
-      <h2>Bet/Raise 額入力 (BB)</h2>
-      
-      <div id="customBetValue" class="numpad-display">2.5</div>
-
+      <h2 id="customBetTitle">額を入力</h2>
+      <div class="numpad-display" id="customBetValue">0</div>
       <div class="numpad-grid">
-        <button onclick="appendBetNum('7')">7</button>
-        <button onclick="appendBetNum('8')">8</button>
-        <button onclick="appendBetNum('9')">9</button>
-        <button onclick="appendBetNum('4')">4</button>
-        <button onclick="appendBetNum('5')">5</button>
-        <button onclick="appendBetNum('6')">6</button>
-        <button onclick="appendBetNum('1')">1</button>
-        <button onclick="appendBetNum('2')">2</button>
-        <button onclick="appendBetNum('3')">3</button>
-        <button onclick="appendBetNum('.')">.</button>
-        <button onclick="appendBetNum('0')">0</button>
-        <button onclick="clearBetNum()" class="btn-clear">C</button>
+        <button onclick="appendBetNum('7')">7</button><button onclick="appendBetNum('8')">8</button><button onclick="appendBetNum('9')">9</button>
+        <button onclick="appendBetNum('4')">4</button><button onclick="appendBetNum('5')">5</button><button onclick="appendBetNum('6')">6</button>
+        <button onclick="appendBetNum('1')">1</button><button onclick="appendBetNum('2')">2</button><button onclick="appendBetNum('3')">3</button>
+        <button onclick="appendBetNum('0')">0</button><button onclick="appendBetNum('.')">.</button>
+        <button class="btn-clear" onclick="clearBetNum()">C</button>
+      </div>
+      <button class="btn-allin-modal" onclick="confirmAllInFromModal()">ALL IN</button>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeCustomBetModal()">キャンセル</button>
+        <button class="btn-confirm" onclick="confirmCustomBet()">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ショーダウン入力モーダル -->
+  <div class="modal-overlay" id="showdownModal" style="display: none;">
+    <div class="modal-content modal-large">
+      <h2>相手のハンド入力</h2>
+      <div class="sd-players-list" id="showdownPlayersContainer"></div>
+      <div class="selected-cards-display" id="showdownSelectedSlots"></div>
+      <div class="card-picker-grid" id="showdownCardPicker"></div>
+      <button class="btn-start" onclick="confirmShowdown()">判定を実行</button>
+    </div>
+  </div>
+
+  <!-- 画面解説・操作手順モーダル (最前面) -->
+  <div class="modal-overlay guide-overlay" id="guideModal" style="display: none;">
+    <div class="modal-content guide-modal-content">
+      <div class="guide-header">
+        <h2>Poker Tracker 操作ガイド</h2>
+        <button class="btn-guide-close" onclick="closeGuideModal()">← 戻る</button>
+      </div>
+      
+      <div class="guide-body">
+        <section class="guide-card">
+          <div class="guide-card-header"><span class="guide-step-num">1</span> 新規ハンドの設定</div>
+          <p>「新規ハンド」ボタンを押すと初期設定画面が開きます。</p>
+          <ul>
+            <li><strong>参加人数:</strong> 2人 (HU) 〜 9-max まで設定できます。</li>
+            <li><strong>Heroポジション:</strong> 自分の席（SB, BB, UTG, BTNなど）を選びます。</li>
+            <li><strong>ホールカード:</strong> 52枚のカードグリッドから自分の手札2枚を選択し、「ハンド開始」を押します。選んだカードはグレーアウトされます。</li>
+          </ul>
+        </section>
+
+        <section class="guide-card">
+          <div class="guide-card-header"><span class="guide-step-num">2</span> プレイ画面の見方</div>
+          <p>ゲーム進行中は画面上部のパネルに情報が表示されます。</p>
+          <ul>
+            <li><span class="guide-badge">STREET</span> PREFLOP, FLOP, TURN, RIVER, SHOWDOWN</li>
+            <li><span class="guide-badge">POT</span> 現在のポット総額 (BB)</li>
+            <li><span class="guide-badge">BOARD</span> 開かれたコミュニティカード</li>
+            <li><span class="guide-badge">TURN</span> 現在アクション待ちのポジション名</li>
+          </ul>
+        </section>
+
+        <section class="guide-card">
+          <div class="guide-card-header"><span class="guide-step-num">3</span> アクションの記録</div>
+          <p>順番（TURN）がまわってきたプレイヤーのアクションを選択します。</p>
+          <ul>
+            <li><strong>FOLD:</strong> 降りる</li>
+            <li><strong>CHECK / CALL:</strong> 前のプレイヤーのベットに合わせる</li>
+            <li><strong>BET / RAISE (手入力):</strong> テンキー画面が開き、具体的なBB額を入力して確定します。</li>
+            <li><strong>倍率ボタン (2.0x〜3.5x):</strong> 現在のベット額に対する倍率でクイック入力できます。</li>
+            <li><strong>ALL IN:</strong> テンキー入力またはプロンプトでオールイン額を指定します。</li>
+          </ul>
+        </section>
+
+        <section class="guide-card">
+          <div class="guide-card-header"><span class="guide-step-num">4</span> ボードカード＆ショーダウン入力</div>
+          <p>全員のアクションが揃うと自動で次のストリートへ進みます。</p>
+          <ul>
+            <li><strong>ボード選択:</strong> フロップ(3枚)、ターン(1枚)、リバー(1枚)のカードを選択し「決定」を押すと盤面に反映されます。</li>
+            <li><strong>ショーダウン:</strong> リバー完了後、生き残った対戦相手のハンドを選択（またはMUCK指定）して「判定を実行」を押すとハンドが完了します。</li>
+          </ul>
+        </section>
+
+        <section class="guide-card">
+          <div class="guide-card-header"><span class="guide-step-num">5</span> 履歴の管理</div>
+          <p>ハンド完了時に自動で保存されます。「履歴画面へ」から過去のハンドログの確認、お気に入り★登録、テキストコピー、削除が可能です。</p>
+        </section>
       </div>
 
-      <div class="modal-actions">
-        <button onclick="closeCustomBetModal()" class="btn-cancel">キャンセル</button>
-        <button onclick="confirmCustomBet()" class="btn-confirm">確定</button>
+      <div class="guide-footer">
+        <button class="btn-start" onclick="closeGuideModal()">元の画面に戻る</button>
       </div>
     </div>
   </div>

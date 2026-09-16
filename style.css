@@ -1,31 +1,33 @@
+/* 全体基本設定 */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background-color: #121212;
   color: #ffffff;
-  padding: 10px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ヘッダー */
 .app-header {
-  position: relative;
-  z-index: 2000;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px;
+  padding: 12px 20px;
+  background-color: #1f1f1f;
   border-bottom: 1px solid #333;
-  margin-bottom: 15px;
-  background-color: #121212;
 }
 
 .app-header h1 {
   font-size: 1.2rem;
+  font-weight: 600;
+  color: #4da6ff;
 }
 
 .header-controls {
@@ -33,45 +35,66 @@ body {
   gap: 8px;
 }
 
-.btn-link {
-  color: #fff;
-  background-color: #333;
+.btn-guide {
+  background-color: #2b5c8f;
+  color: white;
+  border: 1px solid #3a75b0;
   padding: 6px 12px;
   border-radius: 4px;
-  text-decoration: none;
+  cursor: pointer;
   font-size: 0.85rem;
-  border: 1px solid #555;
+  font-weight: bold;
+}
+
+.btn-guide:hover {
+  background-color: #3a75b0;
+}
+
+.btn-link {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: transparent;
+  cursor: pointer;
   display: inline-block;
 }
 
-button {
-  border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-weight: bold;
-  cursor: pointer;
+.btn-link:hover {
+  background-color: #333;
+  color: #fff;
 }
 
 .btn-reset {
   background-color: #d9534f;
   color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 
-/* メインコンテナ */
+/* メインレイアウト */
 .main-container {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  padding: 16px;
   max-width: 600px;
   margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* ステータスパネル */
 .status-panel {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: #1e1e1e;
-  padding: 10px;
+  gap: 8px;
+  background-color: #1e1e1e;
+  padding: 12px;
   border-radius: 8px;
   text-align: center;
 }
@@ -79,28 +102,37 @@ button {
 .status-item {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .status-item .label {
   font-size: 0.75rem;
-  color: #aaa;
+  color: #888;
 }
 
 .status-item .value {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: bold;
-  margin-top: 4px;
 }
 
-.highlight { color: #5bc0de; }
-.cards-text { color: #f0ad4e; }
-.turn-text { color: #5cb85c; }
+.status-item .highlight {
+  color: #ffca28;
+}
 
-/* テーブル領域 */
+.status-item .cards-text {
+  color: #5bc0de;
+}
+
+.status-item .turn-text {
+  color: #5cb85c;
+}
+
+/* テーブル・シートエリア */
 .table-section {
-  background: #1e1e1e;
-  padding: 10px;
-  border-radius: 8px;
+  background-color: #1a261c;
+  border: 2px solid #2e4d32;
+  border-radius: 12px;
+  padding: 12px;
 }
 
 .seats-grid {
@@ -110,28 +142,31 @@ button {
 }
 
 .seat-card {
-  background: #2a2a2a;
-  border: 2px solid #444;
+  background-color: #2a2a2a;
   border-radius: 6px;
   padding: 8px;
   text-align: center;
   font-size: 0.85rem;
+  border: 2px solid transparent;
+  color: #ccc;
 }
 
 .seat-card.active {
   border-color: #5cb85c;
-  background: #1e3a1e;
-}
-
-.seat-card.folded {
-  opacity: 0.3;
+  background-color: #233825;
+  color: #fff;
 }
 
 .seat-card.hero {
-  box-shadow: 0 0 5px #5bc0de;
+  border-color: #4da6ff;
 }
 
-/* アクション領域 */
+.seat-card.folded {
+  opacity: 0.4;
+  background-color: #1c1c1c;
+}
+
+/* アクションボタンエリア */
 .action-section {
   display: flex;
   flex-direction: column;
@@ -145,15 +180,25 @@ button {
 }
 
 .btn-action {
-  padding: 15px 0;
-  font-size: 0.95rem;
+  padding: 14px 0;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
   color: white;
+}
+
+.btn-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(80%);
 }
 
 .btn-fold { background-color: #d9534f; }
 .btn-call { background-color: #0275d8; }
-.btn-raise { background-color: #5cb85c; }
-.btn-allin { background-color: #f0ad4e; }
+.btn-bet { background-color: #5cb85c; }
+.btn-raise { background-color: #f0ad4e; color: #111; }
 
 .sizing-presets {
   display: grid;
@@ -163,42 +208,48 @@ button {
 
 .btn-sizing {
   background-color: #333;
-  color: white;
-  border: 1px solid #555;
-  padding: 10px 0;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 8px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 
-/* ログ領域 */
+/* ログエリア */
 .log-section {
-  background: #1e1e1e;
-  padding: 10px;
+  background-color: #1e1e1e;
   border-radius: 8px;
+  padding: 12px;
 }
 
 .log-section h3 {
-  font-size: 0.9rem;
-  color: #aaa;
+  font-size: 0.85rem;
+  color: #888;
   margin-bottom: 8px;
 }
 
 .log-box {
-  background: #000;
-  padding: 10px;
-  border-radius: 4px;
-  height: 240px;
+  background-color: #121212;
+  height: 220px;
   overflow-y: auto;
+  padding: 8px;
   font-family: monospace;
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  line-height: 1.4;
   white-space: pre-wrap;
+  color: #ddd;
+  border-radius: 4px;
 }
 
-/* モーダル共通 */
+/* モーダル共通構造 */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -206,162 +257,319 @@ button {
 }
 
 .modal-content {
-  background: #222;
-  padding: 20px;
+  background-color: #242424;
   border-radius: 12px;
-  width: 90%;
-  max-width: 400px;
+  padding: 20px;
+  width: 92%;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-large {
+  max-width: 520px;
+}
+
+.modal-header-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-content h2 {
+  font-size: 1.1rem;
+  text-align: center;
+  color: #fff;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: #aaa;
 }
 
 .form-group select {
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #444;
   padding: 8px;
-  background: #333;
-  color: white;
-  border: 1px solid #555;
-  border-radius: 4px;
+  border-radius: 6px;
+  font-size: 0.95rem;
 }
 
+/* カード選択スロット */
 .selected-cards-display {
   display: flex;
   gap: 10px;
-  margin-bottom: 5px;
+  justify-content: center;
 }
 
 .card-slot {
   flex: 1;
-  background: #333;
+  background-color: #333;
+  border: 2px solid #444;
+  border-radius: 6px;
   padding: 10px;
   text-align: center;
-  border-radius: 6px;
-  border: 2px solid transparent;
+  font-size: 0.9rem;
   cursor: pointer;
 }
 
 .card-slot.active {
   border-color: #0275d8;
-  background: #112233;
+  background-color: #1c2d3d;
+  font-weight: bold;
 }
 
-.keypad-ranks {
+/* 52枚カードピッカー */
+.card-picker-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  margin-bottom: 8px;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 3px;
+  margin-top: 6px;
+  background: #181818;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #333;
 }
 
-.keypad-ranks button {
-  background: #444;
-  color: white;
-  padding: 8px 0;
+.playing-card-btn {
+  aspect-ratio: 2/3;
+  background: #ffffff;
+  color: #111;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 1px;
+  font-weight: bold;
+  font-size: 0.7rem;
+  cursor: pointer;
+  user-select: none;
 }
 
-.keypad-ranks button.selected {
-  background: #0275d8;
-  border: 2px solid #fff;
+.playing-card-btn.suit-h,
+.playing-card-btn.suit-d {
+  color: #d9534f;
 }
 
-.keypad-suits {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+.playing-card-btn.suit-s,
+.playing-card-btn.suit-c {
+  color: #111;
 }
 
-.suit-btn {
-  font-size: 1.2rem;
-  padding: 8px 0;
+.playing-card-btn.selected {
+  outline: 2px solid #0275d8;
+  box-shadow: 0 0 6px #0275d8;
+  background-color: #e6f0fa;
 }
 
-.suit-s { background: #333; color: white; }
-.suit-h { background: #d9534f; color: white; }
-.suit-d { background: #0275d8; color: white; }
-.suit-c { background: #5cb85c; color: white; }
+.playing-card-btn:disabled,
+.playing-card-btn.disabled {
+  opacity: 0.2;
+  background: #444 !important;
+  color: #888 !important;
+  border-color: #222 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.card-rank-text {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.card-suit-text {
+  font-size: 0.85rem;
+  line-height: 1;
+}
 
 .btn-start {
-  background: #5cb85c;
+  background-color: #5cb85c;
   color: white;
+  border: none;
   padding: 12px;
+  border-radius: 6px;
   font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 6px;
 }
 
 .btn-start:disabled {
-  background: #555;
+  background-color: #444;
+  color: #777;
   cursor: not-allowed;
 }
 
 /* テンキーモーダル */
+.numpad-modal {
+  max-width: 320px;
+}
+
 .numpad-display {
-  background: #000;
-  color: #5cb85c;
-  font-size: 2rem;
+  background-color: #121212;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 1.8rem;
   text-align: right;
-  padding: 10px;
-  border-radius: 4px;
+  padding: 10px 14px;
+  min-height: 52px;
+  color: #ffca28;
   font-family: monospace;
 }
 
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
 }
 
 .numpad-grid button {
-  background: #333;
+  background-color: #333;
   color: white;
+  border: 1px solid #444;
   font-size: 1.2rem;
   padding: 12px 0;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.btn-clear { background: #d9534f !important; }
+.numpad-grid .btn-clear {
+  background-color: #d9534f;
+  color: white;
+}
+
+.btn-allin-modal {
+  width: 100%;
+  background-color: #b71c1c;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
 
 .modal-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 8px;
 }
 
-.btn-cancel { background: #555; color: white; }
-.btn-confirm { background: #5cb85c; color: white; }
+.modal-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
 
-/* 履歴ページスタイル */
+.btn-cancel { background-color: #555; color: white; }
+.btn-confirm { background-color: #f0ad4e; color: #111; }
+
+/* ショーダウンモーダル */
+.sd-players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+  margin-bottom: 6px;
+}
+
+.showdown-player-card {
+  background: #333;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.showdown-player-card.active {
+  border-color: #0275d8;
+  background: #1e2d3d;
+}
+
+.sd-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-muck {
+  background: #555;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sd-cards-info {
+  font-size: 0.85rem;
+  margin-top: 4px;
+  color: #5bc0de;
+}
+
+.muck-tag {
+  color: #888;
+  font-style: italic;
+}
+
+.muck-notice {
+  text-align: center;
+  color: #aaa;
+  width: 100%;
+  padding: 10px;
+  font-size: 0.9rem;
+}
+
+/* 履歴画面スタイル */
 .history-controls {
   display: flex;
   gap: 8px;
+  align-items: center;
   margin-bottom: 12px;
 }
 
 .btn-filter {
-  padding: 8px 12px;
   background-color: #333;
   color: #ccc;
-  border: 1px solid #555;
+  border: 1px solid #444;
+  padding: 6px 14px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .btn-filter.active {
   background-color: #0275d8;
   color: #fff;
-  border-color: #0275d8;
+  border-color: #5bc0de;
 }
 
 .btn-clear-all {
   margin-left: auto;
-  padding: 8px 12px;
   background-color: #d9534f;
-  color: #fff;
+  color: white;
   border: none;
+  padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .history-list {
@@ -375,85 +583,137 @@ button {
   border: 1px solid #333;
   border-radius: 8px;
   padding: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .history-card.favorite {
-  border-color: #f0ad4e;
+  border-color: #ffca28;
 }
 
 .history-card-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #333;
 }
 
-.star-btn {
-  font-size: 1.3rem;
-  color: #555;
-  cursor: pointer;
-  user-select: none;
-}
-
-.star-btn.active {
-  color: #f0ad4e;
-}
-
-.history-summary {
-  font-weight: bold;
-  color: #4da6ff;
-  font-size: 0.9rem;
-}
-
-.card-header-actions {
-  margin-left: auto;
-  display: flex;
-  gap: 6px;
-}
-
-.btn-copy-history {
-  padding: 4px 8px;
-  background-color: #0275d8;
+.btn-copy-history, .btn-delete-item {
+  background-color: #333;
   color: #fff;
-  border: none;
+  border: 1px solid #555;
+  padding: 4px 8px;
   border-radius: 4px;
-  cursor: pointer;
   font-size: 0.75rem;
+  cursor: pointer;
 }
 
 .btn-delete-item {
-  padding: 4px 8px;
-  background-color: #444;
-  color: #aaa;
+  background-color: #d9534f;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.75rem;
 }
 
-.history-date {
-  font-size: 0.8rem;
-  color: #888;
+/* 操作ガイドモーダル (最高層 z-index) */
+.guide-overlay {
+  z-index: 2000;
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+.guide-modal-content {
+  max-width: 540px;
+  width: 95%;
+  max-height: 85vh;
+  padding: 16px 20px;
+}
+
+.guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
+}
+
+.guide-header h2 {
+  font-size: 1.1rem;
+  color: #4da6ff;
+  margin: 0;
+}
+
+.btn-guide-close {
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-guide-close:hover {
+  background: #444;
+}
+
+.guide-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin: 10px 0;
+}
+
+.guide-card {
+  background: #1c1c1c;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.guide-card-header {
+  font-weight: bold;
+  font-size: 0.95rem;
+  color: #ffca28;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 6px;
 }
 
-.history-logs {
-  font-family: monospace;
-  font-size: 0.85rem;
-  color: #ccc;
-  line-height: 1.5;
-  background-color: #121212;
-  padding: 8px;
-  border-radius: 4px;
-  max-height: 150px;
-  overflow-y: auto;
-  white-space: pre-wrap;
+.guide-step-num {
+  background: #ffca28;
+  color: #111;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: bold;
 }
 
-.empty-msg {
-  text-align: center;
-  color: #777;
-  padding: 30px 0;
+.guide-card p {
+  font-size: 0.85rem;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+
+.guide-card ul {
+  padding-left: 18px;
+  font-size: 0.8rem;
+  color: #bbb;
+  line-height: 1.5;
+}
+
+.guide-badge {
+  background: #333;
+  color: #5bc0de;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.guide-footer {
+  padding-top: 8px;
+  border-top: 1px solid #333;
 }
