@@ -231,7 +231,7 @@ body {
 
 .log-box {
   background-color: #121212;
-  height: 120px;
+  height: 130px;
   overflow-y: auto;
   padding: 8px;
   font-family: monospace;
