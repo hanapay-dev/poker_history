@@ -378,7 +378,8 @@ function advanceTurn() {
     return;
   }
 
-  const isStreetComplete = activePlayers.every(p => p.hasActed && (p.currentInvested === gameState.currentBet || p.isAllIn));
+  // 修正箇所: ALL INしているプレイヤーはhasActedがfalseでもストリート完了とみなす
+  const isStreetComplete = activePlayers.every(p => p.isAllIn || (p.hasActed && p.currentInvested === gameState.currentBet));
 
   if (isStreetComplete) {
     nextStreet();
@@ -493,9 +494,19 @@ function confirmBoardCards() {
   log(`\n--- ${gameState.street}: [${gameState.boardCards.map(formatCard).join(' ')}] ---`);
   
   document.getElementById('boardModal').style.display = 'none';
-  gameState.currentTurnIndex = getFirstActiveIndexPostflop();
-  renderTable();
-  updateUI();
+  
+  // Foldしておらず、All Inもしていない（アクション可能な）プレイヤーをカウント
+  const capablePlayers = gameState.players.filter(p => !p.isFolded && !p.isAllIn);
+  
+  if (capablePlayers.length <= 1) {
+    // ベットアクションができるプレイヤーが1人以下なら、入力待ちをスキップして次のストリートへ自動進行
+    nextStreet();
+  } else {
+    // 通常通りターンを回してアクション入力待ちへ
+    gameState.currentTurnIndex = getFirstActiveIndexPostflop();
+    renderTable();
+    updateUI();
+  }
 }
 
 // --- テンキー入力モーダル ---
