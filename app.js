@@ -215,7 +215,7 @@ function startHand() {
   gameState.lastAggressorIndex = positions.indexOf('BB');
 
   document.getElementById('setupModal').style.display = 'none';
-  log(`--- 新規ハンド開始 (${size}-max) ---`);
+  log(`--- 新規ハンド開始 (${size}-max) (POT: ${gameState.pot} BB) ---`);
   log(`Hero: ${heroPos} [${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}]`);
   
   renderTable();
@@ -378,7 +378,6 @@ function advanceTurn() {
     return;
   }
 
-  // 修正箇所: ALL INしているプレイヤーはhasActedがfalseでもストリート完了とみなす
   const isStreetComplete = activePlayers.every(p => p.isAllIn || (p.hasActed && p.currentInvested === gameState.currentBet));
 
   if (isStreetComplete) {
@@ -491,18 +490,15 @@ function pickBoardCard(card) {
 
 function confirmBoardCards() {
   gameState.boardCards.push(...inputState.boardCardsTemp);
-  log(`\n--- ${gameState.street}: [${gameState.boardCards.map(formatCard).join(' ')}] ---`);
+  log(`\n--- ${gameState.street}: [${gameState.boardCards.map(formatCard).join(' ')}] (POT: ${gameState.pot} BB) ---`);
   
   document.getElementById('boardModal').style.display = 'none';
   
-  // Foldしておらず、All Inもしていない（アクション可能な）プレイヤーをカウント
   const capablePlayers = gameState.players.filter(p => !p.isFolded && !p.isAllIn);
   
   if (capablePlayers.length <= 1) {
-    // ベットアクションができるプレイヤーが1人以下なら、入力待ちをスキップして次のストリートへ自動進行
     nextStreet();
   } else {
-    // 通常通りターンを回してアクション入力待ちへ
     gameState.currentTurnIndex = getFirstActiveIndexPostflop();
     renderTable();
     updateUI();
@@ -660,7 +656,7 @@ function pickShowdownCard(card) {
 }
 
 function confirmShowdown() {
-  log('\n--- SHOWDOWN ---');
+  log(`\n--- SHOWDOWN (POT: ${gameState.pot} BB) ---`);
   log(`Hero [${gameState.heroPos}]: ${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}`);
   
   Object.keys(inputState.sdPlayers).forEach(pos => {
