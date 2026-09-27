@@ -696,7 +696,8 @@ function saveHandToHistory() {
     summary: `${gameState.heroPos} [${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}] (POT: ${gameState.pot} BB)`,
     playerCount: gameState.tableSize,
     favorite: false,
-    logs: [...gameState.logs]
+    logs: [...gameState.logs],
+    memo: "" // メモの初期値を追加
   };
   
   history.unshift(item);

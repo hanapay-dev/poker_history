@@ -717,3 +717,45 @@ body {
   padding-top: 8px;
   border-top: 1px solid #333;
 }
+
+/* ============================
+   追加: 履歴メモ用スタイル
+   ============================ */
+
+.btn-save-memo {
+  background-color: #5cb85c;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-save-memo:hover {
+  background-color: #4cae4c;
+}
+
+.history-memo {
+  width: 100%;
+  background-color: #121212;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  resize: none;
+  overflow: hidden;
+  min-height: 38px;
+  box-sizing: border-box;
+  transition: background-color 0.3s;
+  margin-bottom: 8px; /* ログとの間に余白を追加 */
+}
+
+.history-memo:focus {
+  outline: none;
+  border-color: #5cb85c;
+  background-color: #1a1a1a;
+}

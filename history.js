@@ -43,22 +43,33 @@ function renderHistory() {
 
     const dateStr = item.timestamp ? new Date(item.timestamp).toLocaleString("ja-JP") : (item.date || '');
     const logsText = Array.isArray(item.logs) ? item.logs.join("\n") : '';
+    const memoText = item.memo || ''; 
 
+    // メモエリア（textarea）をログ（history-logs）の上に配置
     card.innerHTML = `
       <div class="history-card-header">
         <span class="star-btn ${item.favorite ? 'active' : ''}" onclick="toggleFavorite(${item.id})" style="cursor:pointer; font-size:1.2rem; margin-right:8px;">${item.favorite ? '★' : '☆'}</span>
         <span class="history-summary"><strong>${item.summary || 'ハンド履歴'}</strong></span>
         <div class="card-header-actions" style="margin-left:auto; display:flex; gap:6px;">
+          <button class="btn-save-memo" onclick="saveMemo(${item.id})">保存</button>
           <button class="btn-copy-history" onclick="copyLogsFromHistory(${item.id})">コピー</button>
           <button class="btn-delete-item" onclick="deleteHistory(${item.id})">削除</button>
         </div>
       </div>
-      <div class="history-date" style="font-size:0.85rem; color:#aaa; margin:4px 0;">${dateStr} ${item.playerCount ? `(${item.playerCount}-max)` : ''}</div>
+      <div class="history-date" style="font-size:0.85rem; color:#aaa; margin:4px 0 8px 0;">${dateStr} ${item.playerCount ? `(${item.playerCount}-max)` : ''}</div>
+      <textarea id="memo_${item.id}" class="history-memo" placeholder="対戦相手やスタック状況、メモを入力..." oninput="autoResize(this)">${escapeHtml(memoText)}</textarea>
       <div class="history-logs" style="white-space:pre-wrap; font-family:monospace; background:#1e1e1e; color:#ddd; padding:10px; border-radius:4px; font-size:0.85rem; line-height:1.4;">${escapeHtml(logsText)}</div>
     `;
 
     historyList.appendChild(card);
   });
+
+  // DOM生成後に各テキストエリアの高さを内容に合わせて初期調整
+  setTimeout(() => {
+    document.querySelectorAll('.history-memo').forEach(textarea => {
+      autoResize(textarea);
+    });
+  }, 0);
 }
 
 function filterHistory(filterType) {
@@ -126,4 +137,29 @@ function escapeHtml(str) {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+}
+
+// テキストエリアの自動リサイズ
+function autoResize(textarea) {
+  textarea.style.height = 'auto'; // 一旦リセット
+  textarea.style.height = textarea.scrollHeight + 'px'; // 内容に合わせて高さを設定
+}
+
+// メモの保存処理
+function saveMemo(id) {
+  const history = JSON.parse(localStorage.getItem("poker_hand_history") || "[]");
+  const target = history.find(h => h.id === id);
+  const textarea = document.getElementById(`memo_${id}`);
+  
+  if (target && textarea) {
+    target.memo = textarea.value;
+    localStorage.setItem("poker_hand_history", JSON.stringify(history));
+    
+    // 保存完了を視覚的に伝えるためのエフェクト
+    const originalBg = textarea.style.backgroundColor;
+    textarea.style.backgroundColor = '#233825'; // 一瞬緑っぽくする
+    setTimeout(() => {
+      textarea.style.backgroundColor = originalBg;
+    }, 500);
+  }
 }
