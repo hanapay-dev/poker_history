@@ -248,16 +248,30 @@ function updateUI() {
     ? gameState.boardCards.map(formatCard).join(' ') 
     : 'なし';
   
+  const isEnded = gameState.street === 'END';
   const currentP = gameState.players[gameState.currentTurnIndex];
-  document.getElementById('currentTurnDisplay').textContent = (gameState.street !== 'END' && currentP) 
+
+  document.getElementById('currentTurnDisplay').textContent = (!isEnded && currentP) 
     ? currentP.pos 
     : '--';
 
+  const foldBtn = document.querySelector('.btn-fold');
   const checkCallBtn = document.getElementById('checkCallBtn');
   const betBtn = document.getElementById('betBtn');
   const raiseBtn = document.getElementById('raiseBtn');
+  const sizingBtns = document.querySelectorAll('.btn-sizing');
 
-  if (currentP) {
+  if (isEnded || !currentP) {
+    if (foldBtn) foldBtn.disabled = true;
+    if (checkCallBtn) checkCallBtn.disabled = true;
+    if (betBtn) betBtn.disabled = true;
+    if (raiseBtn) raiseBtn.disabled = true;
+    sizingBtns.forEach(btn => btn.disabled = true);
+  } else {
+    if (foldBtn) foldBtn.disabled = false;
+    if (checkCallBtn) checkCallBtn.disabled = false;
+    sizingBtns.forEach(btn => btn.disabled = false);
+
     const toCall = gameState.currentBet - currentP.currentInvested;
     checkCallBtn.textContent = toCall <= 0 ? 'CHECK' : `CALL (${toCall} BB)`;
 
@@ -273,7 +287,11 @@ function updateUI() {
 
 // --- アクション処理 ---
 function handleCheckCall() {
+  if (gameState.street === 'END') return;
+
   const p = gameState.players[gameState.currentTurnIndex];
+  if (!p) return;
+
   const toCall = gameState.currentBet - p.currentInvested;
   
   if (toCall <= 0) {
@@ -289,7 +307,10 @@ function handleCheckCall() {
 }
 
 function handleAction(type) {
+  if (gameState.street === 'END') return;
+
   const p = gameState.players[gameState.currentTurnIndex];
+  if (!p) return;
   
   if (type === 'FOLD') {
     p.isFolded = true;
@@ -309,6 +330,8 @@ function handleAction(type) {
 }
 
 function handleSizingAction(multiplier) {
+  if (gameState.street === 'END') return;
+
   const raiseAmt = gameState.currentBet === 0 ? multiplier : gameState.currentBet * multiplier;
   executeBetRaise(raiseAmt);
 }
@@ -507,6 +530,8 @@ function confirmBoardCards() {
 
 // --- テンキー入力モーダル ---
 function openCustomBetModal(mode) {
+  if (gameState.street === 'END') return;
+
   inputState.betMode = mode;
   inputState.betValueStr = '';
   document.getElementById('customBetTitle').textContent = `${mode} 額を入力`;
@@ -680,8 +705,17 @@ function confirmShowdown() {
 // --- リセット & 履歴連携 ---
 function resetHand() {
   gameState.heroCards = [null, null];
+  gameState.boardCards = [];
+  inputState.boardCardsTemp = [];
+  inputState.sdPlayers = {};
+  inputState.sdActivePos = null;
+
   document.getElementById('card1').textContent = '1枚目: ?';
   document.getElementById('card2').textContent = '2枚目: ?';
+
+  const confirmBtn = document.getElementById('setupConfirmBtn');
+  if (confirmBtn) confirmBtn.disabled = true;
+
   selectCardSlot(0);
 
   document.getElementById('setupModal').style.display = 'flex';
@@ -697,7 +731,7 @@ function saveHandToHistory() {
     playerCount: gameState.tableSize,
     favorite: false,
     logs: [...gameState.logs],
-    memo: "" // メモの初期値を追加
+    memo: ""
   };
   
   history.unshift(item);
