@@ -402,7 +402,7 @@ function handleCheckCall() {
   } else {
     p.currentInvested += toCall;
     gameState.pot += toCall;
-    log(`${p.pos}: CALL (${toCall})`);
+    log(`${p.pos}: CALL ${toCall}`);
   }
   
   p.hasActed = true;
