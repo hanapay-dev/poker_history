@@ -9,6 +9,8 @@ let gameState = {
   pot: 1.5,
   currentBet: 1.0,
   bigBlind: 1.0,
+  anteEnabled: false,
+  ante: 0,
   players: [],
   currentTurnIndex: 0,
   lastAggressorIndex: -1, // アクション周回の完了判定用
@@ -188,6 +190,7 @@ function startHand() {
   const size = parseInt(document.getElementById('tableSizeSelect').value);
   const heroPos = document.getElementById('heroPosSelect').value;
   const bigBlind = parseFloat(document.getElementById('bigBlindInput').value);
+  const anteEnabled = document.getElementById('anteCheck').checked;
   const positions = POSITIONS_BY_SIZE[size];
 
   if (isNaN(bigBlind) || bigBlind <= 0) {
@@ -196,12 +199,15 @@ function startHand() {
   }
 
   const smallBlind = bigBlind / 2;
+  const ante = anteEnabled ? bigBlind : 0;
 
   gameState.tableSize = size;
   gameState.heroPos = heroPos;
   gameState.street = 'PREFLOP';
   gameState.bigBlind = bigBlind;
-  gameState.pot = smallBlind + bigBlind;
+  gameState.anteEnabled = anteEnabled;
+  gameState.ante = ante;
+  gameState.pot = smallBlind + bigBlind + ante;
   gameState.currentBet = bigBlind;
   gameState.boardCards = [];
   gameState.logs = [];
