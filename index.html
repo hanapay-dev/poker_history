@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Poker Tracker</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -24,7 +24,7 @@
       </div>
       <div class="status-item">
         <span class="label">POT</span>
-        <span class="value highlight" id="potDisplay">1.5 BB</span>
+        <span class="value highlight" id="potDisplay">1.5</span>
       </div>
       <div class="status-item">
         <span class="label">BOARD</span>
@@ -83,6 +83,10 @@
           <option value="8">8-max</option>
           <option value="9">9-max</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label>BBの点数</label>
+        <input type="number" id="bigBlindInput" value="1" min="0.01" step="any" inputmode="decimal">
       </div>
       <div class="form-group">
         <label>Hero のポジション</label>
@@ -158,6 +162,7 @@
           <p>「新規ハンド」ボタンを押すと初期設定画面が開きます。</p>
           <ul>
             <li><strong>参加人数:</strong> 2人 (HU) 〜 9-max まで設定できます。</li>
+            <li><strong>BBの点数:</strong> ビッグブラインドの点数を入力します。SBは入力したBBの半分で自動設定され、開始時のPOTや各アクションの点数に反映されます。</li>
             <li><strong>Heroポジション:</strong> 自分の席（SB, BB, UTG, BTNなど）を選びます。</li>
             <li><strong>ホールカード:</strong> 52枚のカードグリッドから自分の手札2枚を選択し、「ハンド開始」を押します。選んだカードはグレーアウトされます。</li>
           </ul>
@@ -168,7 +173,7 @@
           <p>ゲーム進行中は画面上部のパネルに情報が表示されます。</p>
           <ul>
             <li><span class="guide-badge">STREET</span> PREFLOP, FLOP, TURN, RIVER, SHOWDOWN</li>
-            <li><span class="guide-badge">POT</span> 現在のポット総額 (BB)</li>
+            <li><span class="guide-badge">POT</span> 現在のポット総額</li>
             <li><span class="guide-badge">BOARD</span> 開かれたコミュニティカード</li>
             <li><span class="guide-badge">TURN</span> 現在アクション待ちのポジション名</li>
           </ul>
@@ -180,7 +185,7 @@
           <ul>
             <li><strong>FOLD:</strong> 降りる</li>
             <li><strong>CHECK / CALL:</strong> 前のプレイヤーのベットに合わせる</li>
-            <li><strong>BET / RAISE (手入力):</strong> テンキー画面が開き、具体的なBB額を入力して確定します。</li>
+            <li><strong>BET / RAISE (手入力):</strong> テンキー画面が開き、具体的な額を入力して確定します。</li>
             <li><strong>倍率ボタン (2.0x〜3.5x):</strong> 現在のベット額に対する倍率でクイック入力できます。</li>
             <li><strong>ALL IN:</strong> テンキー入力またはプロンプトでオールイン額を指定します。</li>
           </ul>

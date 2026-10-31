@@ -8,6 +8,7 @@ let gameState = {
   street: 'PREFLOP', // PREFLOP, FLOP, TURN, RIVER, SHOWDOWN, END
   pot: 1.5,
   currentBet: 1.0,
+  bigBlind: 1.0,
   players: [],
   currentTurnIndex: 0,
   lastAggressorIndex: -1, // アクション周回の完了判定用
@@ -186,13 +187,22 @@ function startHand() {
 
   const size = parseInt(document.getElementById('tableSizeSelect').value);
   const heroPos = document.getElementById('heroPosSelect').value;
+  const bigBlind = parseFloat(document.getElementById('bigBlindInput').value);
   const positions = POSITIONS_BY_SIZE[size];
+
+  if (isNaN(bigBlind) || bigBlind <= 0) {
+    alert('BBの点数を0より大きい数値で入力してください。');
+    return;
+  }
+
+  const smallBlind = bigBlind / 2;
 
   gameState.tableSize = size;
   gameState.heroPos = heroPos;
   gameState.street = 'PREFLOP';
-  gameState.pot = 1.5;
-  gameState.currentBet = 1.0;
+  gameState.bigBlind = bigBlind;
+  gameState.pot = smallBlind + bigBlind;
+  gameState.currentBet = bigBlind;
   gameState.boardCards = [];
   gameState.logs = [];
 
@@ -201,7 +211,7 @@ function startHand() {
     isHero: pos === heroPos,
     isFolded: false,
     isAllIn: false,
-    currentInvested: pos === 'SB' ? 0.5 : pos === 'BB' ? 1.0 : 0,
+    currentInvested: pos === 'SB' ? smallBlind : pos === 'BB' ? bigBlind : 0,
     hasActed: false
   }));
 
@@ -215,7 +225,7 @@ function startHand() {
   gameState.lastAggressorIndex = positions.indexOf('BB');
 
   document.getElementById('setupModal').style.display = 'none';
-  log(`--- 新規ハンド開始 (${size}-max) (POT: ${gameState.pot} BB) ---`);
+  log(`--- 新規ハンド開始 (${size}-max) (POT: ${gameState.pot}) ---`);
   log(`Hero: ${heroPos} [${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}]`);
   
   renderTable();
@@ -234,7 +244,7 @@ function renderTable() {
     let infoStr = `<strong>${p.pos}${p.isHero ? ' (Hero)' : ''}</strong>`;
     if (p.isFolded) infoStr += '<br><span style="color:#888;">FOLD</span>';
     else if (p.isAllIn) infoStr += '<br><span style="color:#d9534f;">ALL-IN</span>';
-    else if (p.currentInvested > 0) infoStr += `<br>${p.currentInvested} BB`;
+    else if (p.currentInvested > 0) infoStr += `<br>${p.currentInvested}`;
     
     cardDiv.innerHTML = infoStr;
     grid.appendChild(cardDiv);
@@ -243,7 +253,7 @@ function renderTable() {
 
 function updateUI() {
   document.getElementById('streetDisplay').textContent = gameState.street;
-  document.getElementById('potDisplay').textContent = `${gameState.pot} BB`;
+  document.getElementById('potDisplay').textContent = `${gameState.pot}`;
   document.getElementById('boardCardsDisplay').textContent = gameState.boardCards.length > 0 
     ? gameState.boardCards.map(formatCard).join(' ') 
     : 'なし';
@@ -273,7 +283,7 @@ function updateUI() {
     sizingBtns.forEach(btn => btn.disabled = false);
 
     const toCall = gameState.currentBet - currentP.currentInvested;
-    checkCallBtn.textContent = toCall <= 0 ? 'CHECK' : `CALL (${toCall} BB)`;
+    checkCallBtn.textContent = toCall <= 0 ? 'CHECK' : `CALL (${toCall})`;
 
     if (gameState.currentBet === 0) {
       betBtn.disabled = false;
@@ -299,7 +309,7 @@ function handleCheckCall() {
   } else {
     p.currentInvested += toCall;
     gameState.pot += toCall;
-    log(`${p.pos}: CALL (${toCall} BB)`);
+    log(`${p.pos}: CALL (${toCall})`);
   }
   
   p.hasActed = true;
@@ -319,7 +329,7 @@ function handleAction(type) {
     advanceTurn();
   } else if (type === 'ALL IN') {
     const defaultVal = gameState.currentBet > 0 ? (gameState.currentBet * 2).toString() : "10";
-    const inputVal = prompt(`${p.pos} の ALL IN 額 (BB) を入力してください:`, defaultVal);
+    const inputVal = prompt(`${p.pos} の ALL IN 額を入力してください:`, defaultVal);
     if (inputVal !== null) {
       const parsed = parseFloat(inputVal);
       if (!isNaN(parsed) && parsed > 0) {
@@ -357,7 +367,7 @@ function executeBetRaise(amount) {
   });
 
   p.hasActed = true;
-  log(`${p.pos}: ${gameState.currentBet === amount && gameState.players.filter(x => x.currentInvested > 0).length === 1 ? 'BET' : 'RAISE'} to ${amount} BB`);
+  log(`${p.pos}: ${gameState.currentBet === amount && gameState.players.filter(x => x.currentInvested > 0).length === 1 ? 'BET' : 'RAISE'} ${amount}`);
 
   advanceTurn();
 }
@@ -384,7 +394,7 @@ function executeAllIn(amount) {
   }
 
   p.hasActed = true;
-  log(`${p.pos}: ALL IN (${amount} BB)`);
+  log(`${p.pos}: ALL IN (${amount})`);
 
   advanceTurn();
 }
@@ -393,7 +403,7 @@ function advanceTurn() {
   const activePlayers = gameState.players.filter(p => !p.isFolded);
   
   if (activePlayers.length === 1) {
-    log(`\n🎉 ${activePlayers[0].pos} がポット (${gameState.pot} BB) を獲得しました！`);
+    log(`\n🎉 ${activePlayers[0].pos} がポット (${gameState.pot}) を獲得しました！`);
     gameState.street = 'END';
     saveHandToHistory();
     renderTable();
@@ -513,7 +523,7 @@ function pickBoardCard(card) {
 
 function confirmBoardCards() {
   gameState.boardCards.push(...inputState.boardCardsTemp);
-  log(`\n--- ${gameState.street}: [${gameState.boardCards.map(formatCard).join(' ')}] (POT: ${gameState.pot} BB) ---`);
+  log(`\n--- ${gameState.street}: [${gameState.boardCards.map(formatCard).join(' ')}] (POT: ${gameState.pot}) ---`);
   
   document.getElementById('boardModal').style.display = 'none';
   
@@ -571,7 +581,7 @@ function confirmAllInFromModal() {
     executeAllIn(val);
   } else {
     const defaultVal = gameState.currentBet > 0 ? (gameState.currentBet * 2).toString() : "10";
-    const inputVal = prompt("ALL IN の額 (BB) を入力してください:", defaultVal);
+    const inputVal = prompt("ALL IN の額を入力してください:", defaultVal);
     if (inputVal !== null) {
       const parsed = parseFloat(inputVal);
       if (!isNaN(parsed) && parsed > 0) {
@@ -587,7 +597,7 @@ function openShowdownModal() {
   const activeOpponents = gameState.players.filter(p => !p.isFolded && !p.isHero);
   
   if (activeOpponents.length === 0) {
-    log(`\n🎉 Showdown: Hero の勝ち！ (ポット: ${gameState.pot} BB)`);
+    log(`\n🎉 Showdown: Hero の勝ち！ (ポット: ${gameState.pot})`);
     gameState.street = 'END';
     saveHandToHistory();
     renderTable();
@@ -681,7 +691,7 @@ function pickShowdownCard(card) {
 }
 
 function confirmShowdown() {
-  log(`\n--- SHOWDOWN (POT: ${gameState.pot} BB) ---`);
+  log(`\n--- SHOWDOWN (POT: ${gameState.pot}) ---`);
   log(`Hero [${gameState.heroPos}]: ${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}`);
   
   Object.keys(inputState.sdPlayers).forEach(pos => {
@@ -693,7 +703,7 @@ function confirmShowdown() {
     }
   });
 
-  log(`\nショーダウン終了 (最終ポット: ${gameState.pot} BB)`);
+  log(`\nショーダウン終了 (最終ポット: ${gameState.pot})`);
   gameState.street = 'END';
   document.getElementById('showdownModal').style.display = 'none';
   
@@ -727,7 +737,7 @@ function saveHandToHistory() {
   const item = {
     id: Date.now(),
     timestamp: Date.now(),
-    summary: `${gameState.heroPos} [${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}] (POT: ${gameState.pot} BB)`,
+    summary: `${gameState.heroPos} [${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}] (POT: ${gameState.pot})`,
     playerCount: gameState.tableSize,
     favorite: false,
     logs: [...gameState.logs],

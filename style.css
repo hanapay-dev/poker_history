@@ -296,7 +296,8 @@ body {
   color: #aaa;
 }
 
-.form-group select {
+.form-group select,
+.form-group input {
   background-color: #333;
   color: #fff;
   border: 1px solid #444;
@@ -759,3 +760,8 @@ body {
   border-color: #5cb85c;
   background-color: #1a1a1a;
 }
+/* ダブルタップによる画面拡大を防止（見た目は変更しない） */
+html, body, button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
