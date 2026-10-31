@@ -618,7 +618,9 @@ function pickBoardCard(card) {
 }
 
 function confirmBoardCards() {
-  pushUndoState();
+  // カード確定自体はUndo履歴に積まない。
+  // これにより、各ストリート最初のアクション直前から「戻る」を押した際、
+  // カード選択画面を挟まず前ストリート最後のアクション直前へ戻れる。
   gameState.boardCards.push(...inputState.boardCardsTemp);
   log(`\n--- ${gameState.street}: [${gameState.boardCards.map(formatCard).join(' ')}] (POT: ${gameState.pot}) ---`);
   
