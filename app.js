@@ -14,10 +14,14 @@ let gameState = {
   players: [],
   currentTurnIndex: 0,
   lastAggressorIndex: -1, // アクション周回の完了判定用
-  logs: []
+  logs: [],
+  lastSavedHistoryId: null
 };
 
 // モーダル入力一時データ
+let undoStack = [];
+const MAX_UNDO_STEPS = 100;
+
 let inputState = {
   boardCardsTemp: [],
   activeBoardSlot: 0,
@@ -31,6 +35,85 @@ let inputState = {
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
 const SUITS = ['s', 'h', 'd', 'c'];
 const SUIT_SYMBOLS = { 's': '♠', 'h': '♥', 'd': '♦', 'c': '♣' };
+
+
+// --- 戻る（Undo）機能 ---
+function cloneState(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function pushUndoState() {
+  undoStack.push({
+    gameState: cloneState(gameState),
+    inputState: cloneState(inputState),
+    boardModalOpen: document.getElementById('boardModal')?.style.display === 'flex',
+    showdownModalOpen: document.getElementById('showdownModal')?.style.display === 'flex'
+  });
+  if (undoStack.length > MAX_UNDO_STEPS) undoStack.shift();
+  updateUndoButton();
+}
+
+function updateUndoButton() {
+  const btn = document.getElementById('undoBtn');
+  if (btn) btn.disabled = undoStack.length === 0;
+}
+
+function closeGameInputModals() {
+  ['boardModal', 'customBetModal', 'showdownModal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+function restoreBoardModalFromUndo() {
+  const count = inputState.boardCardsTemp.length;
+  if (!count) return;
+  document.getElementById('boardModalTitle').textContent = `${gameState.street} カード選択 (${count}枚)`;
+  const container = document.getElementById('boardSelectedSlots');
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const slot = document.createElement('div');
+    slot.className = `card-slot ${i === inputState.activeBoardSlot ? 'active' : ''}`;
+    slot.id = `boardSlot_${i}`;
+    slot.textContent = `${i + 1}枚目: ${inputState.boardCardsTemp[i] ? formatCard(inputState.boardCardsTemp[i]) : '?'}`;
+    slot.onclick = () => selectBoardSlot(i);
+    container.appendChild(slot);
+  }
+  selectBoardSlot(Math.min(inputState.activeBoardSlot, count - 1));
+  document.getElementById('boardConfirmBtn').disabled = !inputState.boardCardsTemp.every(Boolean);
+  document.getElementById('boardModal').style.display = 'flex';
+}
+
+function undoLastAction() {
+  if (undoStack.length === 0) return;
+
+  const currentSavedId = gameState.lastSavedHistoryId || null;
+  const snapshot = undoStack.pop();
+
+  // 戻す対象の操作で履歴保存まで行われていた場合、その保存分だけ取り消す
+  if (currentSavedId && currentSavedId !== snapshot.gameState.lastSavedHistoryId) {
+    const history = JSON.parse(localStorage.getItem('poker_hand_history') || '[]');
+    localStorage.setItem('poker_hand_history', JSON.stringify(history.filter(h => h.id !== currentSavedId)));
+  }
+
+  gameState = cloneState(snapshot.gameState);
+  inputState = cloneState(snapshot.inputState);
+  closeGameInputModals();
+
+  const logBox = document.getElementById('logArea');
+  if (logBox) {
+    logBox.innerText = gameState.logs.join('\n');
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  renderTable();
+  updateUI();
+
+  if (snapshot.boardModalOpen) restoreBoardModalFromUndo();
+  else if (snapshot.showdownModalOpen && gameState.street === 'SHOWDOWN') openShowdownModal();
+
+  updateUndoButton();
+}
 
 // ポジション定義
 const POSITIONS_BY_SIZE = {
@@ -47,7 +130,7 @@ const POSITIONS_BY_SIZE = {
 // --- 初期化 ---
 window.addEventListener('DOMContentLoaded', () => {
   updatePositions();
-  selectCardSlot(0);
+  resetHand();
 });
 
 // --- 操作ガイドモーダル制御 ---
@@ -211,6 +294,9 @@ function startHand() {
   gameState.currentBet = bigBlind;
   gameState.boardCards = [];
   gameState.logs = [];
+  gameState.lastSavedHistoryId = null;
+  undoStack = [];
+  updateUndoButton();
 
   gameState.players = positions.map(pos => ({
     pos,
@@ -231,7 +317,7 @@ function startHand() {
   gameState.lastAggressorIndex = positions.indexOf('BB');
 
   document.getElementById('setupModal').style.display = 'none';
-  log(`--- 新規ハンド開始 (${size}-max) (POT: ${gameState.pot}) ---`);
+  log(`--- 新規ハンド開始 (${size}-max) (BB: ${bigBlind}) (POT: ${gameState.pot}) ---`);
   log(`Hero: ${heroPos} [${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}]`);
   
   renderTable();
@@ -309,6 +395,7 @@ function handleCheckCall() {
   if (!p) return;
 
   const toCall = gameState.currentBet - p.currentInvested;
+  pushUndoState();
   
   if (toCall <= 0) {
     log(`${p.pos}: CHECK`);
@@ -329,6 +416,7 @@ function handleAction(type) {
   if (!p) return;
   
   if (type === 'FOLD') {
+    pushUndoState();
     p.isFolded = true;
     log(`${p.pos}: FOLD`);
     p.hasActed = true;
@@ -361,6 +449,7 @@ function executeBetRaise(amount) {
     return;
   }
 
+  pushUndoState();
   p.currentInvested = amount;
   gameState.pot += diff;
   gameState.currentBet = amount;
@@ -380,6 +469,7 @@ function executeBetRaise(amount) {
 
 function executeAllIn(amount) {
   const p = gameState.players[gameState.currentTurnIndex];
+  pushUndoState();
   p.isAllIn = true;
   
   const diff = amount - p.currentInvested;
@@ -528,6 +618,7 @@ function pickBoardCard(card) {
 }
 
 function confirmBoardCards() {
+  pushUndoState();
   gameState.boardCards.push(...inputState.boardCardsTemp);
   log(`\n--- ${gameState.street}: [${gameState.boardCards.map(formatCard).join(' ')}] (POT: ${gameState.pot}) ---`);
   
@@ -697,6 +788,7 @@ function pickShowdownCard(card) {
 }
 
 function confirmShowdown() {
+  pushUndoState();
   log(`\n--- SHOWDOWN (POT: ${gameState.pot}) ---`);
   log(`Hero [${gameState.heroPos}]: ${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}`);
   
@@ -720,6 +812,9 @@ function confirmShowdown() {
 
 // --- リセット & 履歴連携 ---
 function resetHand() {
+  undoStack = [];
+  updateUndoButton();
+  gameState.lastSavedHistoryId = null;
   gameState.heroCards = [null, null];
   gameState.boardCards = [];
   inputState.boardCardsTemp = [];
@@ -740,9 +835,10 @@ function resetHand() {
 function saveHandToHistory() {
   const history = JSON.parse(localStorage.getItem("poker_hand_history") || "[]");
   
+  const historyId = Date.now();
   const item = {
-    id: Date.now(),
-    timestamp: Date.now(),
+    id: historyId,
+    timestamp: historyId,
     summary: `${gameState.heroPos} [${formatCard(gameState.heroCards[0])} ${formatCard(gameState.heroCards[1])}] (POT: ${gameState.pot})`,
     playerCount: gameState.tableSize,
     favorite: false,
@@ -752,4 +848,5 @@ function saveHandToHistory() {
   
   history.unshift(item);
   localStorage.setItem("poker_hand_history", JSON.stringify(history));
+  gameState.lastSavedHistoryId = historyId;
 }

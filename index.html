@@ -11,6 +11,7 @@
     <h1>Poker Tracker</h1>
     <div class="header-controls">
       <button class="btn-guide" onclick="openGuideModal()">使い方</button>
+      <button class="btn-undo" id="undoBtn" onclick="undoLastAction()" disabled>↶ 戻る</button>
       <a href="history.html" class="btn-link">履歴画面へ</a>
       <button class="btn-reset" onclick="resetHand()">新規ハンド</button>
     </div>
@@ -190,6 +191,7 @@
             <li><strong>BET / RAISE (手入力):</strong> テンキー画面が開き、具体的な額を入力して確定します。</li>
             <li><strong>倍率ボタン (2.0x〜3.5x):</strong> 現在のベット額に対する倍率でクイック入力できます。</li>
             <li><strong>ALL IN:</strong> テンキー入力またはプロンプトでオールイン額を指定します。</li>
+            <li><strong>↶ 戻る:</strong> 直前のアクションや確定したボード入力を1操作ずつ戻せます。複数回押すとさらに前の状態まで戻れます。</li>
           </ul>
         </section>
 
